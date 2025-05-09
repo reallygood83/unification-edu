@@ -179,8 +179,8 @@ export async function generateQuiz(
 5. 답변은 반드시 완전한 JSON 형식이어야 합니다.
 `;
 
-    // 사용 가능한 모델 목록 (우선순위 순)
-    const models = ["gpt-4o", "gpt-4", "gpt-3.5-turbo"];
+    // 사용 가능한 모델 목록 (우선순위 순) - OpenAI 공식 모델명 사용
+    const models = ["gpt-4-0613", "gpt-4-turbo-preview", "gpt-4o", "gpt-4", "gpt-3.5-turbo"];
     let currentModelIndex = 0;
     let response;
 
