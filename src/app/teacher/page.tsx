@@ -40,18 +40,29 @@ export default function TeacherPage() {
     try {
       setIsSearching(true);
       setError(null);
-      
-      // Perplexity API를 사용하여 콘텐츠 검색
+      setSearchResults([]); // 이전 검색 결과 초기화
+
+      // API를 통해 콘텐츠 검색
       const results = await searchContents(searchQuery);
-      
+
       if (results.length === 0) {
         setError('검색 결과가 없습니다. 다른 검색어를 시도해보세요.');
       } else {
+        // 검색 결과를 세션 스토리지에 저장 (퀴즈 생성 페이지에서 사용)
+        sessionStorage.setItem('searchResults', JSON.stringify(results));
         setSearchResults(results);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('검색 오류:', error);
-      setError('검색 중 오류가 발생했습니다. 나중에 다시 시도해주세요.');
+
+      // API 응답에 포함된 오류 메시지가 있으면 표시하고, 없으면 기본 메시지 표시
+      const errorMessage = error.response?.data?.error || error.message;
+
+      if (errorMessage.includes('API 키') || errorMessage.includes('key')) {
+        setError('API 키가 설정되지 않았습니다. 관리자에게 문의하세요.');
+      } else {
+        setError(`검색 중 오류가 발생했습니다: ${errorMessage}`);
+      }
     } finally {
       setIsSearching(false);
     }

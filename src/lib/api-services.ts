@@ -20,7 +20,17 @@ export async function searchContents(query: string): Promise<Content[]> {
     // 자체 API 라우트를 통해 호출
     const response = await axios.post('/api/search', { query });
 
+    // API 응답이 오류를 포함하고 있는지 확인
+    if (response.data.error) {
+      throw new Error(`API 응답 오류: ${response.data.error}`);
+    }
+
     const searchData = response.data as PerplexitySearchResponse;
+
+    if (!searchData.results || !Array.isArray(searchData.results)) {
+      console.error('유효하지 않은 API 응답 형식:', searchData);
+      return [];
+    }
 
     // API 응답을 우리 애플리케이션의 Content 타입으로 변환
     return searchData.results.map(item => ({
@@ -33,8 +43,19 @@ export async function searchContents(query: string): Promise<Content[]> {
       publishedAt: item.publishedDate,
       contentType: item.url.includes('youtube.com') ? 'video' : 'article'
     }));
-  } catch (error) {
-    console.error('Perplexity API 검색 오류:', error);
+  } catch (error: any) {
+    const errorMessage = error.response?.data?.error || error.message || '알 수 없는 오류';
+    console.error('Perplexity API 검색 오류:', errorMessage);
+
+    // 개발 모드에서만 콘솔에 자세한 오류 정보 출력
+    if (process.env.NODE_ENV === 'development') {
+      console.error('자세한 오류 정보:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status
+      });
+    }
+
     return [];
   }
 }
@@ -48,9 +69,25 @@ export async function getContentDetails(contentUrl: string): Promise<string> {
     // 자체 API 라우트를 통해 요약 API 호출
     const response = await axios.post('/api/summarize', { url: contentUrl });
 
+    // API 응답이 오류를 포함하고 있는지 확인
+    if (response.data.error) {
+      throw new Error(`API 응답 오류: ${response.data.error}`);
+    }
+
     return response.data.summary || '콘텐츠를 불러올 수 없습니다.';
-  } catch (error) {
-    console.error('콘텐츠 상세 정보 가져오기 오류:', error);
+  } catch (error: any) {
+    const errorMessage = error.response?.data?.error || error.message || '알 수 없는 오류';
+    console.error('콘텐츠 상세 정보 가져오기 오류:', errorMessage);
+
+    // 개발 모드에서만 콘솔에 자세한 오류 정보 출력
+    if (process.env.NODE_ENV === 'development') {
+      console.error('자세한 오류 정보:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status
+      });
+    }
+
     return '콘텐츠를 불러올 수 없습니다.';
   }
 }
