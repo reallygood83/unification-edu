@@ -2,9 +2,8 @@ import { Content, PerplexitySearchResponse, Quiz, QuizQuestion } from '@/types';
 import axios from 'axios';
 import OpenAI from 'openai';
 
-// API 키를 안전하게 관리하는 것이 좋습니다
-// 실제 서비스에서는 환경 변수나 서버 측 코드에서만 접근 가능하도록 해야 합니다
-const PERPLEXITY_API_KEY = process.env.NEXT_PUBLIC_PERPLEXITY_API_KEY || '';
+// OpenAI API 키는 환경 변수를 통해 관리
+// 클라이언트 측에서도 사용하므로 NEXT_PUBLIC_ 접두사 필요
 const OPENAI_API_KEY = process.env.NEXT_PUBLIC_OPENAI_API_KEY || '';
 
 // OpenAI 클라이언트 초기화
@@ -14,23 +13,15 @@ const openai = new OpenAI({
 });
 
 /**
- * Perplexity API를 사용하여 콘텐츠 검색
+ * Next.js API 라우트를 통해 Perplexity API 검색 요청
  */
 export async function searchContents(query: string): Promise<Content[]> {
   try {
-    const response = await axios.post(
-      'https://api.perplexity.ai/search',
-      { query },
-      {
-        headers: {
-          'Authorization': `Bearer ${PERPLEXITY_API_KEY}`,
-          'Content-Type': 'application/json'
-        }
-      }
-    );
+    // 자체 API 라우트를 통해 호출
+    const response = await axios.post('/api/search', { query });
 
     const searchData = response.data as PerplexitySearchResponse;
-    
+
     // API 응답을 우리 애플리케이션의 Content 타입으로 변환
     return searchData.results.map(item => ({
       id: item.id,
@@ -50,24 +41,13 @@ export async function searchContents(query: string): Promise<Content[]> {
 
 /**
  * 특정 콘텐츠의 전체 텍스트 가져오기
- * 실제 구현에서는 웹 스크래핑이나 추가 API 호출이 필요할 수 있습니다
+ * Next.js API 라우트를 통해 Perplexity API에 요청
  */
 export async function getContentDetails(contentUrl: string): Promise<string> {
   try {
-    // 실제 구현에서는 웹 페이지의 내용을 가져오는 서버 측 로직이 필요합니다
-    // 여기서는 단순화를 위해 Perplexity API를 통해 요약 콘텐츠를 가져옵니다
-    
-    const response = await axios.post(
-      'https://api.perplexity.ai/summarize',
-      { url: contentUrl },
-      {
-        headers: {
-          'Authorization': `Bearer ${PERPLEXITY_API_KEY}`,
-          'Content-Type': 'application/json'
-        }
-      }
-    );
-    
+    // 자체 API 라우트를 통해 요약 API 호출
+    const response = await axios.post('/api/summarize', { url: contentUrl });
+
     return response.data.summary || '콘텐츠를 불러올 수 없습니다.';
   } catch (error) {
     console.error('콘텐츠 상세 정보 가져오기 오류:', error);
