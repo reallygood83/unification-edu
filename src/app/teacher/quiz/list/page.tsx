@@ -12,13 +12,33 @@ export default function QuizListPage() {
   
   useEffect(() => {
     // 저장된 퀴즈 목록 가져오기
-    const loadQuizzes = () => {
+    const loadQuizzes = async () => {
       setLoading(true);
-      const savedQuizzes = getAllQuizzes();
-      setQuizzes(savedQuizzes);
-      setLoading(false);
+
+      try {
+        // 로컬 스토리지에서 먼저 확인
+        const localQuizzes = getAllQuizzes();
+
+        if (localQuizzes.length > 0) {
+          setQuizzes(localQuizzes);
+        } else {
+          // 로컬에 없으면 API에서 가져오기
+          const response = await fetch('/api/mock/quiz');
+
+          if (!response.ok) {
+            throw new Error('퀴즈 목록을 불러오는데 실패했습니다.');
+          }
+
+          const data = await response.json();
+          setQuizzes(data);
+        }
+      } catch (error) {
+        console.error('퀴즈 목록 불러오기 오류:', error);
+      } finally {
+        setLoading(false);
+      }
     };
-    
+
     loadQuizzes();
   }, []);
   

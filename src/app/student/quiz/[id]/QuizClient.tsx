@@ -26,12 +26,35 @@ export default function QuizClient({ quizId, initialQuizData }: QuizClientProps)
   const [score, setScore] = useState<number>(0);
   const [timeSpent, setTimeSpent] = useState<number>(0);
   
+  // 서버 API에서 퀴즈 데이터 불러오기
+  const fetchQuizFromAPI = async () => {
+    try {
+      setLoading(true);
+
+      // 모의 API 라우트에서 퀴즈 데이터 가져오기
+      const response = await fetch(`/api/mock/quiz/${quizId}`);
+
+      if (!response.ok) {
+        throw new Error('퀴즈를 불러오는데 실패했습니다.');
+      }
+
+      const data = await response.json();
+      setQuiz(data);
+    } catch (error) {
+      console.error('퀴즈 불러오기 오류:', error);
+      setError('퀴즈를 불러오는데 실패했습니다. 잠시 후 다시 시도해주세요.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (quiz) {
       setSelectedAnswers(new Array(quiz.questions.length).fill(-1));
       setQuizStartTime(Date.now());
     } else if (!initialQuizData) {
-      setError('퀴즈를 찾을 수 없습니다.');
+      // 로컬에 데이터가 없으면 서버 API에서 불러오기
+      fetchQuizFromAPI();
     }
   }, [quiz, initialQuizData]);
   
