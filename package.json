@@ -1,0 +1,40 @@
+{
+  "name": "unification-quiz-app",
+  "version": "1.0.0",
+  "description": "통일교육 퀴즈 웹 애플리케이션",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "keywords": [
+    "unification",
+    "education",
+    "quiz",
+    "korea"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@types/node": "^22.15.17",
+    "@types/react": "^19.1.3",
+    "@types/react-dom": "^19.1.3",
+    "axios": "^1.9.0",
+    "cookies-next": "^5.1.0",
+    "eslint": "^9.26.0",
+    "eslint-config-next": "^15.3.2",
+    "html2canvas": "^1.4.1",
+    "next": "^15.3.2",
+    "openai": "^4.98.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "typescript": "^5.8.3"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.1.5",
+    "autoprefixer": "^10.4.21",
+    "postcss": "^8.5.3",
+    "tailwindcss": "^3.4.17"
+  }
+}
