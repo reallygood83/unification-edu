@@ -1,13 +1,8 @@
 import { getQuizById } from '@/lib/api-services';
 import QuizClient from './QuizClient';
 
-// Next.js 15 App Router 규칙에 맞게 타입 정의 수정
-type Props = {
-  params: { id: string };
-  searchParams: Record<string, string | string[] | undefined>;
-};
-
-export default function StudentQuizPage({ params }: Props) {
+// Next.js 15에서는 더 간단한 페이지 정의 사용
+export default function Page({ params }: { params: { id: string } }) {
   // 퀴즈 데이터 가져오기
   const quizData = getQuizById(params.id);
 
