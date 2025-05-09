@@ -7,16 +7,11 @@ import { Quiz, QuizAttempt, StudentProgress } from '@/types';
 import { getQuizById } from '@/lib/api-services';
 import { unificationCategories } from '@/lib/data';
 
-// 타입 정의
-interface PageParams {
-  id: string;
-}
-
-interface StudentQuizPageProps {
-  params: PageParams;
-}
-
-export default function StudentQuizPage({ params }: StudentQuizPageProps) {
+export default function StudentQuizPage({
+  params,
+}: {
+  params: { id: string }
+}) {
   const router = useRouter();
   const { id } = params;
   
