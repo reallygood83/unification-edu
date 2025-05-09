@@ -1,11 +1,12 @@
 import { getQuizById } from '@/lib/api-services';
 import QuizClient from './QuizClient';
 
-// Next.js 15에서는 더 간단한 페이지 정의 사용
-export default function Page({ params }: { params: { id: string } }) {
+// Next.js 15 타입 문제 해결을 위해 최소한의 형태로 페이지 컴포넌트 정의
+export default function Page({ params }) {
   // 퀴즈 데이터 가져오기
-  const quizData = getQuizById(params.id);
+  const quizId = params.id;
+  const quizData = getQuizById(quizId);
 
   // 클라이언트 컴포넌트로 데이터 전달
-  return <QuizClient quizId={params.id} initialQuizData={quizData} />;
+  return <QuizClient quizId={quizId} initialQuizData={quizData} />;
 }
