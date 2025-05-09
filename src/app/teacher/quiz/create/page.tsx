@@ -1,13 +1,13 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { unificationCategories, gradeLevels, difficultyLevels } from '@/lib/data';
 import { Content, Quiz, QuizQuestion, GradeLevel } from '@/types';
 import { generateQuiz, saveQuiz } from '@/lib/api-services';
 
-export default function CreateQuizPage() {
+function QuizCreator() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const contentId = searchParams.get('contentId');
@@ -144,18 +144,18 @@ export default function CreateQuizPage() {
         <p className="text-gray-600 mb-6">
           선택한 콘텐츠를 기반으로 학생들을 위한 맞춤형 퀴즈를 생성합니다.
         </p>
-        
+
         <Link href="/teacher" className="text-primary hover:underline mb-6 inline-block">
           &larr; 교사 페이지로 돌아가기
         </Link>
       </div>
-      
+
       {error && (
         <div className="bg-red-50 text-red-700 p-4 rounded-md mb-6">
           {error}
         </div>
       )}
-      
+
       {/* 선택된 콘텐츠 정보 */}
       {content && (
         <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-6 mb-8">
@@ -163,9 +163,9 @@ export default function CreateQuizPage() {
           <div className="flex items-start">
             {content.imageUrl && (
               <div className="mr-4 flex-shrink-0">
-                <img 
-                  src={content.imageUrl} 
-                  alt={content.title} 
+                <img
+                  src={content.imageUrl}
+                  alt={content.title}
                   className="w-24 h-24 object-cover rounded"
                 />
               </div>
@@ -180,11 +180,11 @@ export default function CreateQuizPage() {
           </div>
         </div>
       )}
-      
+
       {/* 퀴즈 설정 폼 */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-6 mb-8">
         <h2 className="text-xl font-semibold mb-4">퀴즈 설정</h2>
-        
+
         <div className="space-y-6">
           <div>
             <label className="block text-gray-700 mb-2">퀴즈 제목</label>
@@ -196,7 +196,7 @@ export default function CreateQuizPage() {
               placeholder="퀴즈 제목을 입력하세요"
             />
           </div>
-          
+
           <div>
             <label className="block text-gray-700 mb-2">퀴즈 설명</label>
             <textarea
@@ -207,7 +207,7 @@ export default function CreateQuizPage() {
               rows={3}
             />
           </div>
-          
+
           <div>
             <label className="block text-gray-700 mb-2">난이도</label>
             <div className="flex flex-wrap gap-3">
@@ -224,7 +224,7 @@ export default function CreateQuizPage() {
               ))}
             </div>
           </div>
-          
+
           <div>
             <label className="block text-gray-700 mb-2">대상 학년</label>
             <div className="flex flex-wrap gap-3">
@@ -241,7 +241,7 @@ export default function CreateQuizPage() {
               ))}
             </div>
           </div>
-          
+
           <div>
             <label className="block text-gray-700 mb-2">문항 수 (1-10)</label>
             <input
@@ -253,7 +253,7 @@ export default function CreateQuizPage() {
               className="w-20 p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
             />
           </div>
-          
+
           <div className="pt-4">
             <button
               onClick={handleGenerateQuiz}
@@ -265,27 +265,27 @@ export default function CreateQuizPage() {
           </div>
         </div>
       </div>
-      
+
       {/* 생성된 퀴즈 미리보기 */}
       {generatedQuestions.length > 0 && (
         <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-6 mb-8">
           <h2 className="text-xl font-semibold mb-4">생성된 퀴즈 미리보기</h2>
-          
+
           <div className="mb-6">
             <h3 className="text-lg font-medium mb-1">{quizTitle}</h3>
             <p className="text-gray-600">{quizDescription}</p>
           </div>
-          
+
           <div className="space-y-6">
             {generatedQuestions.map((question, questionIndex) => (
               <div key={question.id} className="border border-gray-200 rounded-md p-4">
                 <h4 className="text-lg font-medium mb-3">
                   {questionIndex + 1}. {question.question}
                 </h4>
-                
+
                 <div className="space-y-2 mb-4">
                   {question.options.map((option, optionIndex) => (
-                    <div 
+                    <div
                       key={optionIndex}
                       className={`p-3 rounded-md ${
                         question.correctAnswerIndex === optionIndex
@@ -306,7 +306,7 @@ export default function CreateQuizPage() {
                     </div>
                   ))}
                 </div>
-                
+
                 <div className="bg-blue-50 border border-blue-100 rounded-md p-3">
                   <p className="text-sm">
                     <span className="font-medium">정답 설명:</span> {question.explanation}
@@ -315,7 +315,7 @@ export default function CreateQuizPage() {
               </div>
             ))}
           </div>
-          
+
           <div className="mt-8">
             <button
               onClick={handleSaveQuiz}
@@ -327,5 +327,13 @@ export default function CreateQuizPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function CreateQuizPage() {
+  return (
+    <Suspense fallback={<div className="container mx-auto p-8">로딩 중...</div>}>
+      <QuizCreator />
+    </Suspense>
   );
 }
