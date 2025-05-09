@@ -2,15 +2,33 @@ import { Content, PerplexitySearchResponse, Quiz, QuizQuestion } from '@/types';
 import axios from 'axios';
 import OpenAI from 'openai';
 
-// OpenAI API 키는 환경 변수를 통해 관리
-// 클라이언트 측에서도 사용하므로 NEXT_PUBLIC_ 접두사 필요
-const OPENAI_API_KEY = process.env.NEXT_PUBLIC_OPENAI_API_KEY || '';
+import { API_KEYS } from '@/lib/env';
 
-// OpenAI 클라이언트 초기화
-const openai = new OpenAI({
-  apiKey: OPENAI_API_KEY,
-  dangerouslyAllowBrowser: true // 클라이언트 사이드에서 사용 (실제 서비스에서는 서버에서만 사용하는 것이 바람직)
-});
+// OpenAI API 키는 환경 변수 모듈에서 가져옴
+// 클라이언트 측에서도 사용하므로 NEXT_PUBLIC_ 접두사 필요
+const OPENAI_API_KEY = API_KEYS.OPENAI;
+
+// OpenAI 클라이언트 초기화 (API 키가 있는 경우에만)
+let openai: OpenAI;
+
+try {
+  openai = new OpenAI({
+    apiKey: OPENAI_API_KEY,
+    dangerouslyAllowBrowser: true, // 클라이언트 사이드에서 사용
+    defaultQuery: { timeout: 30000 }, // 타임아웃 설정 (30초)
+    defaultHeaders: { 'app-name': 'unification-edu' },
+  });
+
+  console.log('OpenAI 클라이언트가 성공적으로 초기화되었습니다.');
+} catch (err) {
+  console.error('OpenAI 클라이언트 초기화 오류:', err);
+
+  // 폴백으로 최소한의 클라이언트 생성
+  openai = new OpenAI({
+    apiKey: 'dummy-key-for-initialization',
+    dangerouslyAllowBrowser: true
+  });
+}
 
 /**
  * Next.js API 라우트를 통해 Perplexity API 검색 요청
@@ -161,14 +179,40 @@ export async function generateQuiz(
 5. 답변은 반드시 완전한 JSON 형식이어야 합니다.
 `;
 
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages: [
-        { role: "system", content: "당신은 교육 콘텐츠에서 퀴즈를 생성하는 전문가입니다. 주어진 콘텐츠를 정확히 이해하고 교육적인 가치가 있는 퀴즈 문항을 생성합니다." },
-        { role: "user", content: prompt }
-      ],
-      temperature: 0.7,
-    });
+    // 사용 가능한 모델 목록 (우선순위 순)
+    const models = ["gpt-4o", "gpt-4", "gpt-3.5-turbo"];
+    let currentModelIndex = 0;
+    let response;
+
+    while (currentModelIndex < models.length) {
+      const currentModel = models[currentModelIndex];
+      try {
+        console.log(`OpenAI API - ${currentModel} 모델로 퀴즈 생성 시도`);
+
+        response = await openai.chat.completions.create({
+          model: currentModel,
+          messages: [
+            { role: "system", content: "당신은 교육 콘텐츠에서 퀴즈를 생성하는 전문가입니다. 주어진 콘텐츠를 정확히 이해하고 교육적인 가치가 있는 퀴즈 문항을 생성합니다." },
+            { role: "user", content: prompt }
+          ],
+          temperature: 0.7,
+        });
+
+        // 성공했으면 루프 종료
+        break;
+      } catch (modelError: any) {
+        // 모델 접근 권한이 없거나 문제가 있으면 다음 모델 시도
+        console.error(`${currentModel} 모델 사용 중 오류:`, modelError.message);
+
+        if (currentModelIndex === models.length - 1) {
+          // 마지막 모델까지 모두 실패한 경우 오류 발생
+          throw new Error(`모든 OpenAI 모델 시도 실패: ${modelError.message}`);
+        }
+
+        // 다음 모델 시도
+        currentModelIndex++;
+      }
+    }
 
     const responseText = response.choices[0].message.content || '[]';
     
