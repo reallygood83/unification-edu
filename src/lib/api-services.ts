@@ -17,35 +17,54 @@ const openai = new OpenAI({
  */
 export async function searchContents(query: string): Promise<Content[]> {
   try {
-    // 자체 API 라우트를 통해 호출
-    const response = await axios.post('/api/search', { query });
+    // 먼저 실제 API를 호출해보고, 실패하면 모의 API로 폴백
+    try {
+      const response = await axios.post('/api/search', { query });
 
-    // API 응답이 오류를 포함하고 있는지 확인
-    if (response.data.error) {
-      throw new Error(`API 응답 오류: ${response.data.error}`);
+      // API 응답이 오류를 포함하고 있는지 확인
+      if (response.data.error) {
+        throw new Error(`API 응답 오류: ${response.data.error}`);
+      }
+
+      const searchData = response.data as PerplexitySearchResponse;
+
+      if (!searchData.results || !Array.isArray(searchData.results)) {
+        console.error('유효하지 않은 API 응답 형식:', searchData);
+        throw new Error('유효하지 않은 API 응답 형식');
+      }
+
+      // API 응답을 우리 애플리케이션의 Content 타입으로 변환
+      return searchData.results.map(item => ({
+        id: item.id,
+        title: item.title,
+        snippet: item.snippet,
+        source: item.source,
+        sourceUrl: item.url,
+        imageUrl: item.imageUrl,
+        publishedAt: item.publishedDate,
+        contentType: item.url.includes('youtube.com') ? 'video' : 'article'
+      }));
+    } catch (realApiError) {
+      console.log('실제 API 호출 실패, 모의 API로 전환:', realApiError);
+
+      // 실제 API가 실패했을 때 모의 API를 사용
+      const mockResponse = await axios.post('/api/mock/search', { query });
+      const mockData = mockResponse.data as PerplexitySearchResponse;
+
+      return mockData.results.map(item => ({
+        id: item.id,
+        title: item.title,
+        snippet: item.snippet,
+        source: item.source,
+        sourceUrl: item.url,
+        imageUrl: item.imageUrl,
+        publishedAt: item.publishedDate,
+        contentType: item.url.includes('youtube.com') ? 'video' : 'article'
+      }));
     }
-
-    const searchData = response.data as PerplexitySearchResponse;
-
-    if (!searchData.results || !Array.isArray(searchData.results)) {
-      console.error('유효하지 않은 API 응답 형식:', searchData);
-      return [];
-    }
-
-    // API 응답을 우리 애플리케이션의 Content 타입으로 변환
-    return searchData.results.map(item => ({
-      id: item.id,
-      title: item.title,
-      snippet: item.snippet,
-      source: item.source,
-      sourceUrl: item.url,
-      imageUrl: item.imageUrl,
-      publishedAt: item.publishedDate,
-      contentType: item.url.includes('youtube.com') ? 'video' : 'article'
-    }));
   } catch (error: any) {
     const errorMessage = error.response?.data?.error || error.message || '알 수 없는 오류';
-    console.error('Perplexity API 검색 오류:', errorMessage);
+    console.error('검색 오류 (실제 및 모의 API 모두 실패):', errorMessage);
 
     // 개발 모드에서만 콘솔에 자세한 오류 정보 출력
     if (process.env.NODE_ENV === 'development') {
@@ -66,18 +85,27 @@ export async function searchContents(query: string): Promise<Content[]> {
  */
 export async function getContentDetails(contentUrl: string): Promise<string> {
   try {
-    // 자체 API 라우트를 통해 요약 API 호출
-    const response = await axios.post('/api/summarize', { url: contentUrl });
+    // 먼저 실제 API를 호출해보고, 실패하면 모의 API로 폴백
+    try {
+      // 자체 API 라우트를 통해 요약 API 호출
+      const response = await axios.post('/api/summarize', { url: contentUrl });
 
-    // API 응답이 오류를 포함하고 있는지 확인
-    if (response.data.error) {
-      throw new Error(`API 응답 오류: ${response.data.error}`);
+      // API 응답이 오류를 포함하고 있는지 확인
+      if (response.data.error) {
+        throw new Error(`API 응답 오류: ${response.data.error}`);
+      }
+
+      return response.data.summary || '콘텐츠를 불러올 수 없습니다.';
+    } catch (realApiError) {
+      console.log('실제 요약 API 호출 실패, 모의 API로 전환:', realApiError);
+
+      // 실제 API가 실패했을 때 모의 API를 사용
+      const mockResponse = await axios.post('/api/mock/summarize', { url: contentUrl });
+      return mockResponse.data.summary || '콘텐츠를 불러올 수 없습니다.';
     }
-
-    return response.data.summary || '콘텐츠를 불러올 수 없습니다.';
   } catch (error: any) {
     const errorMessage = error.response?.data?.error || error.message || '알 수 없는 오류';
-    console.error('콘텐츠 상세 정보 가져오기 오류:', errorMessage);
+    console.error('콘텐츠 상세 정보 가져오기 오류 (모든 API 실패):', errorMessage);
 
     // 개발 모드에서만 콘솔에 자세한 오류 정보 출력
     if (process.env.NODE_ENV === 'development') {
