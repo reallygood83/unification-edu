@@ -1,9 +1,10 @@
-# API 키 설정 가이드
+# OpenAI API 통합 가이드
 
-이 프로젝트는 다음과 같은 외부 API 서비스를 사용합니다:
+이 프로젝트는 모든 AI 기능을 **OpenAI API**로 통합하여 사용합니다:
 
-1. **Perplexity API** - 뉴스 및 콘텐츠 검색
-2. **OpenAI API** - AI 퀴즈 생성
+1. **콘텐츠 검색** - OpenAI가 통일 교육 관련 콘텐츠를 생성
+2. **퀴즈 생성** - OpenAI가 콘텐츠 기반 퀴즈를 생성
+3. **콘텐츠 요약** - OpenAI가 콘텐츠를 요약
 
 ## 환경 변수 설정 방법
 
@@ -13,8 +14,7 @@
 2. 다음 형식으로 API 키 추가:
 
 ```
-PERPLEXITY_API_KEY=your_perplexity_api_key_here
-NEXT_PUBLIC_OPENAI_API_KEY=your_openai_api_key_here
+OPENAI_API_KEY=your_openai_api_key_here
 ```
 
 ### Vercel 배포 환경
@@ -22,26 +22,36 @@ NEXT_PUBLIC_OPENAI_API_KEY=your_openai_api_key_here
 1. Vercel 대시보드에서 프로젝트 선택
 2. Settings > Environment Variables 메뉴로 이동
 3. 다음 환경 변수 추가:
-   - `PERPLEXITY_API_KEY`
-   - `NEXT_PUBLIC_OPENAI_API_KEY`
+   - `OPENAI_API_KEY`
 
 ## 주의사항
 
 1. **환경 변수 이름** - 대소문자를 정확히 일치시켜야 합니다.
 2. **값 형식** - API 키 값에 따옴표나 공백이 포함되어서는 안 됩니다.
 3. **키 교체** - API 키가 노출되면 즉시 새 키로 교체해야 합니다.
+4. **서버 측 처리** - API 키는 서버 측에서만 사용되며, 클라이언트에 노출되지 않습니다.
 
 ## API 키 획득 방법
-
-### Perplexity API 키
-1. [Perplexity AI](https://www.perplexity.ai/) 계정 생성
-2. API 섹션으로 이동하여 새 API 키 생성
-3. 생성된 키를 환경 변수에 설정
 
 ### OpenAI API 키
 1. [OpenAI 플랫폼](https://platform.openai.com/) 계정 생성
 2. API 키 섹션으로 이동하여 새 API 키 생성
 3. 생성된 키를 환경 변수에 설정
+
+## 모의 데이터 지원
+
+API 키가 없거나 오류가 발생하는 경우에도 애플리케이션은 모의 데이터를 사용하여 기본 기능을 제공합니다:
+- 검색 기능 - 가상의 통일 교육 콘텐츠 제공
+- 퀴즈 생성 - 예시 퀴즈 문항 제공
+- 콘텐츠 요약 - 예시 요약 텍스트 제공
+
+## API 호출 구조
+
+1. 클라이언트 측: `/lib/openai-client.ts`를 통해 API 호출
+2. 서버 측: `/app/api/openai/route.ts`에서 API 요청 처리
+3. 외부 API: OpenAI API에 요청 전송
+
+이 구조는 API 키를 서버 측에서만 사용하도록 하여 보안을 강화합니다.
 
 ## 문제 해결
 
@@ -51,6 +61,7 @@ NEXT_PUBLIC_OPENAI_API_KEY=your_openai_api_key_here
 - 재배포 후 변경사항이 적용되었는지 확인
 
 ### API 오류가 발생하는 경우
-- API 키가 유효한지 확인
+- OpenAI API 키가 유효한지 확인
 - API 사용량 제한에 도달했는지 확인
+- 사용 가능한 결제 방식이 설정되어 있는지 확인
 - 로그에서 상세 오류 메시지 확인

@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { unificationCategories, gradeLevels, difficultyLevels } from '@/lib/data';
 import { Content, GradeLevel, Category } from '@/types';
-import { searchContents } from '@/lib/api-services';
+import { searchContents } from '@/lib/openai-client';
 
 export default function TeacherPage() {
   const router = useRouter();

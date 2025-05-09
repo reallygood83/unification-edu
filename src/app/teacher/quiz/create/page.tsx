@@ -5,7 +5,8 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { unificationCategories, gradeLevels, difficultyLevels } from '@/lib/data';
 import { Content, Quiz, QuizQuestion, GradeLevel } from '@/types';
-import { generateQuiz, saveQuiz } from '@/lib/api-services';
+import { saveQuiz } from '@/lib/api-services';
+import { generateQuiz } from '@/lib/openai-client';
 
 function QuizCreator() {
   const router = useRouter();
