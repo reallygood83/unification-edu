@@ -1,80 +1,64 @@
-# 통일교육 퀴즈 웹 애플리케이션
+# 통일교육 퀴즈 애플리케이션
 
-학생들이 통일교육을 재미있게 학습할 수 있는 퀴즈 애플리케이션입니다.
-
-## 프로젝트 개요
-
-통일교육 퀴즈 웹 애플리케이션은 교사가 통일교육 카테고리를 선택하면 관련 뉴스/동영상을 추천해주고, 선택한 콘텐츠를 기반으로 AI가 퀴즈를 자동 생성하는 웹 애플리케이션입니다. 학생들이 5일 연속으로 퀴즈를 완료하면 통일 관련 인증서를 획득할 수 있습니다.
-
-## 기술 스택
-
-- Next.js (App Router)
-- TypeScript
-- Tailwind CSS
-- OpenAI API (퀴즈 생성)
-- NewsAPI 또는 유사한 뉴스 API
-- YouTube Data API
-- localStorage (구현체 용으로 사용)
-- Vercel 배포 예정
+통일교육 관련 콘텐츠를 기반으로 퀴즈를 생성하고 학습할 수 있는 웹 애플리케이션입니다. Perplexity API로 최신 콘텐츠를 검색하고, OpenAI API를 통해 자동으로 퀴즈를 생성합니다.
 
 ## 주요 기능
 
-1. 교사용 카테고리 선택 (통일 교육 주제) 및 학년 필터
-2. 선택한 카테고리 기반 뉴스/YouTube 콘텐츠 추천
-3. 선택한 콘텐츠 기반 5문항 퀴즈 자동 생성 (OpenAI API)
-4. 학생용 퀴즈 인터페이스 및 채점 시스템
-5. 5일 연속 완료 추적 및 인증서 생성
+### 교사용 기능
+- Perplexity API를 활용한 통일교육 콘텐츠 검색
+- OpenAI API를 통한 맞춤형 퀴즈 자동 생성
+- 난이도 및 학년 수준 조절 가능
+- 생성된 퀴즈 관리 및 공유
 
-## 시작하기
+### 학생용 기능
+- 생성된 퀴즈 풀기
+- 퀴즈 결과 확인 및 오답 노트
+- 5일 연속 퀴즈 완료 시 수료 인증서 발급
+- 학습 진행 상황 추적
 
+## 기술 스택
+
+- **프레임워크**: Next.js 15
+- **스타일링**: Tailwind CSS
+- **API**: 
+  - Perplexity API (콘텐츠 검색)
+  - OpenAI API (퀴즈 생성)
+- **데이터 저장**: LocalStorage (클라이언트 측)
+
+## 설치 및 실행
+
+1. 저장소 클론
 ```bash
-# 레파지토리 복제
-git clone https://github.com/yourusername/unification-quiz-app.git
+git clone https://github.com/사용자명/unification-edu.git
+cd unification-edu
+```
 
-# 프로젝트 폴더로 이동
-cd unification-quiz-app
-
-# 라이브러리 설치
+2. 의존성 설치
+```bash
 npm install
+```
 
-# 환경 변수 파일 설정
-# .env.local 파일을 생성하고 아래 변수를 설정해주세요
-# OPENAI_API_KEY=your_openai_api_key
-# NEWS_API_KEY=your_news_api_key
-# YOUTUBE_API_KEY=your_youtube_api_key
+3. 환경 변수 설정
+`.env.local` 파일을 생성하고 다음과 같이 API 키를 설정합니다:
+```
+NEXT_PUBLIC_PERPLEXITY_API_KEY=your_perplexity_api_key
+NEXT_PUBLIC_OPENAI_API_KEY=your_openai_api_key
+```
 
-# 로컬 서버 실행
+4. 개발 서버 실행
+```bash
 npm run dev
 ```
 
-## 구조
+5. 브라우저에서 `http://localhost:3000` 접속
 
-```
-/src
-  /app                    # Next.js App Router 페이지
-    /layout.tsx           # 루트 레이아웃
-    /page.tsx             # 홈페이지
-    /teacher              # 교사용 페이지
-      /page.tsx           # 교사용 대시보드
-      /content/[category] # 카테고리별 콘텐츠 선택 페이지
-      /quiz/create        # 퀴즈 생성 페이지
-    /student              # 학생용 페이지
-      /page.tsx           # 학생용 대시보드
-      /quiz/[id]          # 퀴즈 페이지
-      /certificate        # 인증서 페이지
-  /components             # 재사용 컴포넌트
-  /lib                    # 유틸리티 함수
-    /data.ts              # 카테고리 데이터
-    /mock-data.ts         # 목업 데이터
-    /quiz-generator.ts    # 퀴즈 생성 로직
-  /styles                 # 스타일
-    /globals.css          # 글로벌 스타일
-  /types                  # 타입 정의
-    /index.ts             # 타입 정의
-```
+## 향후 개선 계획
 
-## 프로덕션 로직
+- 서버 측 데이터베이스 구현 (사용자 및 퀴즈 데이터 영구 저장)
+- 사용자 인증 시스템 추가
+- 교사/학생 상호작용 기능 강화
+- 다양한 퀴즈 유형 및 통계 분석 기능 추가
 
-- 실제 구현에서는 Vercel KV 또는 다른 데이터베이스를 사용하여 데이터를 저장하는 것이 좋습니다.
-- NewsAPI, YouTube API를 사용하여 실제 최신 콘텐츠를 가져오도록 구현해야 합니다.
-- 퀴즈 자동 생성을 위해 OpenAI API를 사용합니다.
+## 라이센스
+
+ISC
