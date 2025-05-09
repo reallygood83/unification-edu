@@ -35,21 +35,31 @@ try {
  */
 export async function searchContents(query: string): Promise<Content[]> {
   try {
-    // 먼저 실제 API를 호출해보고, 실패하면 모의 API로 폴백
-    try {
-      const response = await axios.post('/api/search', { query });
+    console.log('검색 API 호출 시도:', query);
 
-      // API 응답이 오류를 포함하고 있는지 확인
-      if (response.data.error) {
-        throw new Error(`API 응답 오류: ${response.data.error}`);
+    // 서버 측 API 직접 호출 시도
+    try {
+      // 새로운 서버 측 API 라우트 호출
+      const response = await fetch('/api/perplexity-search', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ query }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`서버 API 응답 오류: ${response.status}`);
       }
 
-      const searchData = response.data as PerplexitySearchResponse;
+      const searchData = await response.json() as PerplexitySearchResponse;
 
       if (!searchData.results || !Array.isArray(searchData.results)) {
         console.error('유효하지 않은 API 응답 형식:', searchData);
         throw new Error('유효하지 않은 API 응답 형식');
       }
+
+      console.log('검색 결과 수:', searchData.results.length);
 
       // API 응답을 우리 애플리케이션의 Content 타입으로 변환
       return searchData.results.map(item => ({
@@ -62,12 +72,42 @@ export async function searchContents(query: string): Promise<Content[]> {
         publishedAt: item.publishedDate,
         contentType: item.url.includes('youtube.com') ? 'video' : 'article'
       }));
-    } catch (realApiError) {
-      console.log('실제 API 호출 실패, 모의 API로 전환:', realApiError);
+    } catch (serverApiError) {
+      console.log('서버 API 호출 실패, 기존 API 시도:', serverApiError);
 
-      // 실제 API가 실패했을 때 모의 API를 사용
-      const mockResponse = await axios.post('/api/mock/search', { query });
-      const mockData = mockResponse.data as PerplexitySearchResponse;
+      // 서버 API가 실패하면 기존 방식 시도
+      try {
+        // 자체 API 라우트를 통해 호출
+        const response = await axios.post('/api/search', { query });
+
+        // API 응답이 오류를 포함하고 있는지 확인
+        if (response.data.error) {
+          throw new Error(`API 응답 오류: ${response.data.error}`);
+        }
+
+        const searchData = response.data as PerplexitySearchResponse;
+
+        if (!searchData.results || !Array.isArray(searchData.results)) {
+          console.error('유효하지 않은 API 응답 형식:', searchData);
+          throw new Error('유효하지 않은 API 응답 형식');
+        }
+
+        // API 응답을 우리 애플리케이션의 Content 타입으로 변환
+        return searchData.results.map(item => ({
+          id: item.id,
+          title: item.title,
+          snippet: item.snippet,
+          source: item.source,
+          sourceUrl: item.url,
+          imageUrl: item.imageUrl,
+          publishedAt: item.publishedDate,
+          contentType: item.url.includes('youtube.com') ? 'video' : 'article'
+        }));
+      } catch (realApiError) {
+        console.log('실제 API 호출 실패, 모의 API로 전환:', realApiError);
+
+        // 실제 API가 실패했을 때 모의 API를 사용
+        const mockResponse = await axios.post('/api/mock/search', { query });
 
       return mockData.results.map(item => ({
         id: item.id,
