@@ -36,10 +36,9 @@ try {
 export async function searchContents(query: string): Promise<Content[]> {
   try {
     console.log('검색 API 호출 시도:', query);
-
-    // 서버 측 API 직접 호출 시도
+    
+    // 1. 먼저 새로운 서버 측 API 호출 시도
     try {
-      // 새로운 서버 측 API 라우트 호출
       const response = await fetch('/api/perplexity-search', {
         method: 'POST',
         headers: {
@@ -47,20 +46,20 @@ export async function searchContents(query: string): Promise<Content[]> {
         },
         body: JSON.stringify({ query }),
       });
-
+      
       if (!response.ok) {
         throw new Error(`서버 API 응답 오류: ${response.status}`);
       }
-
+      
       const searchData = await response.json() as PerplexitySearchResponse;
-
+      
       if (!searchData.results || !Array.isArray(searchData.results)) {
         console.error('유효하지 않은 API 응답 형식:', searchData);
         throw new Error('유효하지 않은 API 응답 형식');
       }
 
       console.log('검색 결과 수:', searchData.results.length);
-
+      
       // API 응답을 우리 애플리케이션의 Content 타입으로 변환
       return searchData.results.map(item => ({
         id: item.id,
@@ -74,24 +73,22 @@ export async function searchContents(query: string): Promise<Content[]> {
       }));
     } catch (serverApiError) {
       console.log('서버 API 호출 실패, 기존 API 시도:', serverApiError);
-
-      // 서버 API가 실패하면 기존 방식 시도
+      
+      // 2. 서버 API 실패 시 기존 API 시도
       try {
-        // 자체 API 라우트를 통해 호출
         const response = await axios.post('/api/search', { query });
-
-        // API 응답이 오류를 포함하고 있는지 확인
+  
         if (response.data.error) {
           throw new Error(`API 응답 오류: ${response.data.error}`);
         }
-
+  
         const searchData = response.data as PerplexitySearchResponse;
-
+        
         if (!searchData.results || !Array.isArray(searchData.results)) {
           console.error('유효하지 않은 API 응답 형식:', searchData);
           throw new Error('유효하지 않은 API 응답 형식');
         }
-
+  
         // API 응답을 우리 애플리케이션의 Content 타입으로 변환
         return searchData.results.map(item => ({
           id: item.id,
@@ -105,26 +102,32 @@ export async function searchContents(query: string): Promise<Content[]> {
         }));
       } catch (realApiError) {
         console.log('실제 API 호출 실패, 모의 API로 전환:', realApiError);
-
-        // 실제 API가 실패했을 때 모의 API를 사용
-        const mockResponse = await axios.post('/api/mock/search', { query });
-
-      return mockData.results.map(item => ({
-        id: item.id,
-        title: item.title,
-        snippet: item.snippet,
-        source: item.source,
-        sourceUrl: item.url,
-        imageUrl: item.imageUrl,
-        publishedAt: item.publishedDate,
-        contentType: item.url.includes('youtube.com') ? 'video' : 'article'
-      }));
+        
+        // 3. 실제 API 실패 시 모의 API 사용
+        try {
+          const mockResponse = await axios.post('/api/mock/search', { query });
+          const mockData = mockResponse.data as PerplexitySearchResponse;
+          
+          return mockData.results.map(item => ({
+            id: item.id,
+            title: item.title,
+            snippet: item.snippet,
+            source: item.source,
+            sourceUrl: item.url,
+            imageUrl: item.imageUrl,
+            publishedAt: item.publishedDate,
+            contentType: item.url.includes('youtube.com') ? 'video' : 'article'
+          }));
+        } catch (mockApiError) {
+          console.error('모의 API도 실패:', mockApiError);
+          throw mockApiError; // 모든 API 실패 시 상위 catch로 전달
+        }
+      }
     }
   } catch (error: any) {
     const errorMessage = error.response?.data?.error || error.message || '알 수 없는 오류';
-    console.error('검색 오류 (실제 및 모의 API 모두 실패):', errorMessage);
-
-    // 개발 모드에서만 콘솔에 자세한 오류 정보 출력
+    console.error('검색 오류 (모든 API 실패):', errorMessage);
+    
     if (process.env.NODE_ENV === 'development') {
       console.error('자세한 오류 정보:', {
         message: error.message,
@@ -132,8 +135,8 @@ export async function searchContents(query: string): Promise<Content[]> {
         status: error.response?.status
       });
     }
-
-    return [];
+    
+    return []; // 모든 API 실패 시 빈 배열 반환
   }
 }
 
@@ -228,7 +231,7 @@ export async function generateQuiz(
       const currentModel = models[currentModelIndex];
       try {
         console.log(`OpenAI API - ${currentModel} 모델로 퀴즈 생성 시도`);
-
+        
         response = await openai.chat.completions.create({
           model: currentModel,
           messages: [
@@ -237,18 +240,18 @@ export async function generateQuiz(
           ],
           temperature: 0.7,
         });
-
+        
         // 성공했으면 루프 종료
         break;
       } catch (modelError: any) {
         // 모델 접근 권한이 없거나 문제가 있으면 다음 모델 시도
         console.error(`${currentModel} 모델 사용 중 오류:`, modelError.message);
-
+        
         if (currentModelIndex === models.length - 1) {
           // 마지막 모델까지 모두 실패한 경우 오류 발생
           throw new Error(`모든 OpenAI 모델 시도 실패: ${modelError.message}`);
         }
-
+        
         // 다음 모델 시도
         currentModelIndex++;
       }
@@ -336,4 +339,4 @@ export function generateCertificate(studentName: string): string {
       <p>인증번호: ${certId}</p>
     </div>
   `;
-} 
+}
