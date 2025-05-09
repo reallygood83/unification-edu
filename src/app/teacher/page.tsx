@@ -26,7 +26,7 @@ export default function TeacherPage() {
   // 카테고리 선택 핸들러
   const handleCategorySelect = (category: Category) => {
     setSelectedCategory(category);
-    // 카테고리 키워드를 사용하여 기본 검색어 설정
+    // 카테고리 키워드를 사용하여 기본 검색어 설정 (자동 검색 실행 없음)
     setSearchQuery(category.keywords[0]);
   };
 
@@ -79,12 +79,7 @@ export default function TeacherPage() {
     router.push(`/teacher/quiz/create?contentId=${content.id}&categoryId=${selectedCategory.id}`);
   };
   
-  // 카테고리가 변경될 때 자동으로 검색
-  useEffect(() => {
-    if (selectedCategory && searchQuery) {
-      handleSearch();
-    }
-  }, [selectedCategory]);
+  // 자동 검색 제거 - 사용자가 명시적으로 검색 버튼을 클릭할 때만 검색 실행
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -161,25 +156,32 @@ export default function TeacherPage() {
           <h2 className="text-xl font-semibold mb-4">콘텐츠 검색</h2>
           <p className="text-gray-600 mb-4">
             <span className="font-medium">{selectedCategory.name}</span> 카테고리와 관련된 콘텐츠를 검색하여 퀴즈를 생성하세요.
-            추천 키워드: {selectedCategory.keywords.join(', ')}
+          </p>
+          <p className="text-gray-500 text-sm mb-4 bg-gray-50 p-2 rounded-md">
+            <span className="font-medium">추천 키워드:</span> {selectedCategory.keywords.join(', ')}
           </p>
           
-          <div className="flex gap-2 mb-6">
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-              placeholder="검색어를 입력하세요"
-              className="flex-1 p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-            />
-            <button
-              onClick={handleSearch}
-              disabled={isSearching}
-              className="bg-primary text-white px-4 py-2 rounded-md hover:bg-primary/90 transition-colors disabled:bg-gray-400"
-            >
-              {isSearching ? '검색 중...' : '검색'}
-            </button>
+          <div className="mb-6">
+            <p className="mb-3 text-sm text-gray-600">
+              통일교육 관련 키워드를 입력하고 검색 버튼을 클릭하세요.
+            </p>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                placeholder="검색어를 입력하세요"
+                className="flex-1 p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+              />
+              <button
+                onClick={handleSearch}
+                disabled={isSearching}
+                className="bg-primary text-white px-6 py-2 rounded-md hover:bg-primary/90 transition-colors disabled:bg-gray-400 font-medium"
+              >
+                {isSearching ? '검색 중...' : '검색하기'}
+              </button>
+            </div>
           </div>
           
           {error && (
@@ -214,7 +216,21 @@ export default function TeacherPage() {
                         <p className="text-gray-500 text-sm mb-2">
                           출처: {content.source} {content.publishedAt && `• ${new Date(content.publishedAt).toLocaleDateString()}`}
                         </p>
-                        <p className="text-gray-700 text-sm">{content.snippet}</p>
+                        <p className="text-gray-700 text-sm mb-2">{content.snippet}</p>
+                        {content.sourceUrl && (
+                          <a
+                            href={content.sourceUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-primary hover:underline inline-flex items-center text-sm"
+                            onClick={(e) => e.stopPropagation()} // 클릭 시 상위 요소의 onClick 실행 방지
+                          >
+                            원문 기사 보기
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                            </svg>
+                          </a>
+                        )}
                       </div>
                     </div>
                     <div className="mt-2 flex justify-end">

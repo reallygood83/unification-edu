@@ -220,11 +220,43 @@ function QuizCreator() {
               <p className="text-gray-500 text-sm mb-2">
                 출처: {content.source} {content.publishedAt && `• ${new Date(content.publishedAt).toLocaleDateString()}`}
               </p>
-              <p className="text-gray-700">{content.snippet}</p>
+              <p className="text-gray-700 mb-2">{content.snippet}</p>
+              {content.sourceUrl && (
+                <a
+                  href={content.sourceUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-primary hover:underline inline-flex items-center"
+                >
+                  원문 기사 보기
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                  </svg>
+                </a>
+              )}
             </div>
           </div>
         </div>
       )}
+
+      {/* 아티클 읽기 관련 설명 */}
+      <div className="bg-blue-50 border border-blue-100 rounded-lg p-4 mb-6">
+        <div className="flex items-start">
+          <div className="flex-shrink-0 mt-0.5">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <div className="ml-3">
+            <h3 className="text-sm font-medium text-blue-800">아티클 활용 방식</h3>
+            <p className="mt-1 text-sm text-blue-600">
+              AI는 선택한 콘텐츠의 원문을 읽고 요약하여 퀴즈를 생성합니다.
+              원문 URL이 제공된 경우 실제 아티클 내용을 분석하고, 그렇지 않은 경우 콘텐츠 요약 정보를 활용합니다.
+              더 정확한 퀴즈 생성을 위해 원문 기사를 함께 확인해보세요.
+            </p>
+          </div>
+        </div>
+      </div>
 
       {/* 퀴즈 설정 폼 */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-6 mb-8">

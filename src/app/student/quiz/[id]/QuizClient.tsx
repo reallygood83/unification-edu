@@ -215,7 +215,22 @@ export default function QuizClient({ quizId, initialQuizData }: QuizClientProps)
         <div className="max-w-2xl mx-auto bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden">
           <div className="p-6">
             <h1 className="text-2xl font-bold mb-2 text-center">퀴즈 결과</h1>
-            <p className="text-center text-gray-600 mb-6">{quiz.title}</p>
+            <p className="text-center text-gray-600 mb-2">{quiz.title}</p>
+            {quiz.sourceContent?.sourceUrl && (
+              <div className="text-center mb-6">
+                <a
+                  href={quiz.sourceContent.sourceUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-primary hover:underline inline-flex items-center justify-center"
+                >
+                  퀴즈 출처 원문 보기
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                  </svg>
+                </a>
+              </div>
+            )}
             
             <div className="flex justify-center mb-8">
               <div className="w-32 h-32 rounded-full flex items-center justify-center bg-blue-50 border-4 border-blue-500">
@@ -272,11 +287,28 @@ export default function QuizClient({ quizId, initialQuizData }: QuizClientProps)
     <div className="container mx-auto px-4 py-8">
       <div className="max-w-2xl mx-auto bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden">
         <div className="bg-gray-50 p-4 border-b border-gray-200">
-          <div className="flex justify-between items-center">
-            <h1 className="text-xl font-semibold">{quiz.title}</h1>
-            <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">
-              {getCategoryName(quiz.category)}
-            </span>
+          <div className="flex flex-col space-y-2">
+            <div className="flex justify-between items-center">
+              <h1 className="text-xl font-semibold">{quiz.title}</h1>
+              <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">
+                {getCategoryName(quiz.category)}
+              </span>
+            </div>
+            {quiz.sourceContent?.sourceUrl && (
+              <div className="text-sm">
+                <a
+                  href={quiz.sourceContent.sourceUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-primary hover:underline inline-flex items-center"
+                >
+                  퀴즈 출처 원문 보기
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                  </svg>
+                </a>
+              </div>
+            )}
           </div>
         </div>
         
