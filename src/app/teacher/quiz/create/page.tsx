@@ -58,23 +58,67 @@ function QuizCreator() {
       setError('콘텐츠 정보가 없습니다.');
       return;
     }
-    
+
     try {
       setLoading(true);
       setError(null);
-      
-      // OpenAI API를 사용하여 퀴즈 생성
-      const questions = await generateQuiz(
-        content,
-        category,
-        difficulty,
-        questionCount
-      );
-      
-      if (questions.length === 0) {
-        setError('퀴즈 생성에 실패했습니다. 다시 시도해주세요.');
-      } else {
-        setGeneratedQuestions(questions);
+
+      console.log('서버 측 AI 퀴즈 API 직접 호출');
+
+      try {
+        // 서버 측 API 직접 호출 - generateQuiz 함수 우회
+        const response = await fetch('/api/ai-quiz', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            content,
+            category,
+            difficulty,
+            questionCount
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error('서버 API 응답 오류');
+        }
+
+        const data = await response.json();
+
+        if (data.questions && data.questions.length > 0) {
+          setGeneratedQuestions(data.questions);
+        } else {
+          // generateQuiz 함수를 폴백으로 사용
+          const backupQuestions = await generateQuiz(
+            content,
+            category,
+            difficulty,
+            questionCount
+          );
+
+          if (backupQuestions.length === 0) {
+            setError('퀴즈 생성에 실패했습니다. 다시 시도해주세요.');
+          } else {
+            setGeneratedQuestions(backupQuestions);
+          }
+        }
+      } catch (apiError) {
+        console.error('서버 API 오류, 기존 함수로 폴백:', apiError);
+
+        // OpenAI API를 사용하여 퀴즈 생성 (폴백)
+        const questions = await generateQuiz(
+          content,
+          category,
+          difficulty,
+          questionCount
+        );
+
+        if (questions.length === 0) {
+          setError('퀴즈 생성에 실패했습니다. 다시 시도해주세요.');
+        } else {
+          setGeneratedQuestions(questions);
+        }
       }
     } catch (error) {
       console.error('퀴즈 생성 오류:', error);
