@@ -7,11 +7,48 @@ import { Content, QuizQuestion } from '@/types';
 
 /**
  * 통일 교육 관련 콘텐츠 검색
+ * - 먼저 네이버 API로 실제 기사 검색 시도
+ * - 실패 시 OpenAI로 생성된 가상 콘텐츠 사용
  */
 export async function searchContents(query: string): Promise<Content[]> {
   try {
     console.log('통일 교육 콘텐츠 검색:', query);
-    
+
+    // 단계 1: 네이버 검색 API 사용 (실제 기사)
+    try {
+      console.log('네이버 API 검색 시도...');
+      const naverResponse = await fetch('/api/naver-search', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ query }),
+      });
+
+      const naverData = await naverResponse.json();
+
+      if (naverData.success && naverData.data?.results?.length > 0) {
+        console.log('네이버 검색 결과 사용:', naverData.data.results.length);
+
+        // 데이터 구조화 및 변환
+        return naverData.data.results.map(item => ({
+          id: item.id,
+          title: item.title,
+          snippet: item.snippet,
+          source: item.source,
+          sourceUrl: item.sourceUrl,
+          imageUrl: item.imageUrl,
+          publishedAt: item.publishedAt,
+          contentType: item.sourceUrl.includes('youtube.com') ? 'video' : 'article'
+        }));
+      }
+
+      console.log('네이버 검색 결과 없음, OpenAI 폴백 사용');
+    } catch (naverError) {
+      console.error('네이버 검색 오류, OpenAI 폴백 사용:', naverError);
+    }
+
+    // 단계 2: OpenAI 가상 콘텐츠 생성 (폴백)
     const response = await fetch('/api/openai', {
       method: 'POST',
       headers: {
@@ -22,13 +59,13 @@ export async function searchContents(query: string): Promise<Content[]> {
         payload: { query }
       }),
     });
-    
+
     const data = await response.json();
-    
+
     if (!data.success) {
-      console.error('검색 오류:', data.error);
+      console.error('OpenAI 검색 오류:', data.error);
     }
-    
+
     // 데이터 구조화 및 변환
     const results = data.data?.results || [];
     return results.map(item => ({

@@ -160,7 +160,24 @@ export default function TeacherPage() {
           <p className="text-gray-500 text-sm mb-4 bg-gray-50 p-2 rounded-md">
             <span className="font-medium">추천 키워드:</span> {selectedCategory.keywords.join(', ')}
           </p>
-          
+
+          {/* 실제 기사 검색 안내 */}
+          <div className="bg-blue-50 border border-blue-100 rounded-md p-3 mb-4 text-sm text-blue-700">
+            <div className="flex items-start">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 flex-shrink-0 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <div>
+                <p className="font-medium mb-1">실제 기사 검색 기능 안내</p>
+                <p>네이버 검색 API를 통해 실제 통일 관련 기사를 검색합니다. API 키가 설정되지 않았거나 검색 결과가 없을 경우 AI가 생성한 가상 콘텐츠를 표시합니다.</p>
+                <p className="mt-1">
+                  <a href="https://developers.naver.com/apps/#/register" target="_blank" rel="noopener noreferrer" className="underline">네이버 개발자 센터</a>에서
+                  API 키를 발급받은 후 <code className="bg-blue-100 px-1.5 py-0.5 rounded">.env.local</code> 파일에 설정하세요.
+                </p>
+              </div>
+            </div>
+          </div>
+
           <div className="mb-6">
             <p className="mb-3 text-sm text-gray-600">
               통일교육 관련 키워드를 입력하고 검색 버튼을 클릭하세요.
