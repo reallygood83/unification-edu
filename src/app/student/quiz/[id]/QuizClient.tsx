@@ -23,25 +23,20 @@ export default function QuizClient({ quizId, initialQuizData }: QuizClientProps)
   const [quizCompleted, setQuizCompleted] = useState<boolean>(false);
   const [quizStartTime, setQuizStartTime] = useState<number>(Date.now());
   
-  // 결과 상태
   const [score, setScore] = useState<number>(0);
   const [timeSpent, setTimeSpent] = useState<number>(0);
   
-  // 초기화
   useEffect(() => {
     if (quiz) {
-      // 빈 답변 배열 초기화
       setSelectedAnswers(new Array(quiz.questions.length).fill(-1));
-      setQuizStartTime(Date.now()); // 퀴즈 시작 시간 기록
+      setQuizStartTime(Date.now());
     } else if (!initialQuizData) {
       setError('퀴즈를 찾을 수 없습니다.');
     }
   }, [quiz, initialQuizData]);
   
-  // 현재 문제
   const currentQuestion = quiz?.questions[currentQuestionIndex];
   
-  // 답변 선택 핸들러
   const handleSelectAnswer = (answerIndex: number) => {
     if (quizCompleted) return;
     
@@ -50,25 +45,21 @@ export default function QuizClient({ quizId, initialQuizData }: QuizClientProps)
     setSelectedAnswers(newAnswers);
   };
   
-  // 다음 문제로 이동
   const handleNextQuestion = () => {
     if (currentQuestionIndex < (quiz?.questions.length || 0) - 1) {
       setCurrentQuestionIndex(currentQuestionIndex + 1);
     }
   };
   
-  // 이전 문제로 이동
   const handlePrevQuestion = () => {
     if (currentQuestionIndex > 0) {
       setCurrentQuestionIndex(currentQuestionIndex - 1);
     }
   };
   
-  // 퀴즈 제출
   const handleSubmitQuiz = () => {
     if (!quiz) return;
     
-    // 풀지 않은 문제가 있는지 확인
     const unansweredQuestions = selectedAnswers.filter(answer => answer === -1).length;
     if (unansweredQuestions > 0) {
       if (!window.confirm(`아직 ${unansweredQuestions}개의 문제를 풀지 않았습니다. 정말 제출하시겠습니까?`)) {
@@ -76,7 +67,6 @@ export default function QuizClient({ quizId, initialQuizData }: QuizClientProps)
       }
     }
     
-    // 점수 계산
     let correctAnswers = 0;
     quiz.questions.forEach((question, index) => {
       if (selectedAnswers[index] === question.correctAnswerIndex) {
@@ -86,8 +76,6 @@ export default function QuizClient({ quizId, initialQuizData }: QuizClientProps)
     
     const totalQuestions = quiz.questions.length;
     const calculatedScore = Math.round((correctAnswers / totalQuestions) * 100);
-    
-    // 소요 시간 계산 (초 단위)
     const endTime = Date.now();
     const calculatedTimeSpent = Math.floor((endTime - quizStartTime) / 1000);
     
@@ -95,26 +83,22 @@ export default function QuizClient({ quizId, initialQuizData }: QuizClientProps)
     setTimeSpent(calculatedTimeSpent);
     setQuizCompleted(true);
     
-    // 퀴즈 결과 저장
     saveQuizAttempt(quiz.id, calculatedScore, totalQuestions, selectedAnswers, calculatedTimeSpent);
   };
   
-  // 퀴즈 시도 결과 저장
   const saveQuizAttempt = (
-    quizId: string,
-    score: number,
-    totalQuestions: number,
-    answers: number[],
+    quizId: string, 
+    score: number, 
+    totalQuestions: number, 
+    answers: number[], 
     timeSpent: number
   ) => {
     try {
-      // 현재 저장된 진행 상황 가져오기
       const savedProgressString = localStorage.getItem('studentProgress');
       if (!savedProgressString) return;
       
       const savedProgress: StudentProgress = JSON.parse(savedProgressString);
       
-      // 새 퀴즈 시도 생성
       const newAttempt: QuizAttempt = {
         id: `attempt-${Date.now()}`,
         quizId,
@@ -126,19 +110,15 @@ export default function QuizClient({ quizId, initialQuizData }: QuizClientProps)
         timeSpent
       };
       
-      // 이전에 같은 퀴즈를 풀었는지 확인
       const attemptIndex = savedProgress.quizAttempts.findIndex(attempt => attempt.quizId === quizId);
       
       if (attemptIndex !== -1) {
-        // 기존 시도 업데이트
         savedProgress.quizAttempts[attemptIndex] = newAttempt;
       } else {
-        // 새 시도 추가
         savedProgress.quizAttempts.push(newAttempt);
       }
       
-      // 연속 학습 계산
-      const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD 형식
+      const today = new Date().toISOString().split('T')[0];
       const lastCompleted = savedProgress.lastCompletedDate;
       
       if (lastCompleted) {
@@ -147,47 +127,38 @@ export default function QuizClient({ quizId, initialQuizData }: QuizClientProps)
         const yesterdayStr = yesterday.toISOString().split('T')[0];
         
         if (lastCompleted === yesterdayStr) {
-          // 어제 학습했으면 연속 일수 증가
           savedProgress.streakCount += 1;
         } else if (lastCompleted !== today) {
-          // 어제도 아니고 오늘도 아니면 연속 일수 초기화
           savedProgress.streakCount = 1;
         }
       } else {
-        // 첫 학습
         savedProgress.streakCount = 1;
       }
       
-      // 오늘 날짜 저장
       savedProgress.lastCompletedDate = today;
       
-      // 완료 일수 업데이트
       if (!savedProgress.completedDays) {
         savedProgress.completedDays = 1;
       } else {
         savedProgress.completedDays += 1;
       }
       
-      // 인증서 획득 확인
       if (savedProgress.streakCount >= 5 && !savedProgress.certificateEarned) {
         savedProgress.certificateEarned = true;
       }
       
-      // 업데이트된 진행 상황 저장
       localStorage.setItem('studentProgress', JSON.stringify(savedProgress));
     } catch (error) {
       console.error('퀴즈 시도 저장 오류:', error);
     }
   };
   
-  // 카테고리 이름 가져오기
-  const getCategoryName = (categoryId: string): string => {
+  const getCategoryName = (categoryId: string) => {
     const category = unificationCategories.find(c => c.id === categoryId);
     return category ? category.name : '기타';
   };
   
-  // 소요 시간 포맷
-  const formatTime = (seconds: number): string => {
+  const formatTime = (seconds: number) => {
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;
     return `${minutes}분 ${remainingSeconds}초`;
@@ -214,8 +185,7 @@ export default function QuizClient({ quizId, initialQuizData }: QuizClientProps)
       </div>
     );
   }
-
-  // 퀴즈 결과 화면
+  
   if (quizCompleted) {
     return (
       <div className="container mx-auto px-4 py-8">
@@ -253,69 +223,6 @@ export default function QuizClient({ quizId, initialQuizData }: QuizClientProps)
               </div>
             </div>
             
-            <h2 className="text-xl font-semibold mb-4">정답 확인</h2>
-            
-            <div className="space-y-6 mb-8">
-              {quiz.questions.map((question, questionIndex) => {
-                const isCorrect = selectedAnswers[questionIndex] === question.correctAnswerIndex;
-                
-                return (
-                  <div 
-                    key={question.id} 
-                    className={`border rounded-md p-4 ${
-                      isCorrect ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'
-                    }`}
-                  >
-                    <div className="flex items-start mb-3">
-                      <div className={`w-6 h-6 rounded-full flex items-center justify-center mr-2 flex-shrink-0 ${
-                        isCorrect ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
-                      }`}>
-                        {isCorrect ? '✓' : '✗'}
-                      </div>
-                      <h3 className="font-medium">
-                        {questionIndex + 1}. {question.question}
-                      </h3>
-                    </div>
-                    
-                    <div className="ml-8 space-y-2 mb-3">
-                      {question.options.map((option, optionIndex) => (
-                        <div 
-                          key={optionIndex}
-                          className={`p-2 rounded-md ${
-                            question.correctAnswerIndex === optionIndex
-                              ? 'bg-green-100 border border-green-200'
-                              : selectedAnswers[questionIndex] === optionIndex
-                                ? 'bg-red-100 border border-red-200'
-                                : 'bg-white border border-gray-200'
-                          }`}
-                        >
-                          <div className="flex items-start">
-                            <div className={`w-5 h-5 rounded-full flex items-center justify-center mr-2 flex-shrink-0 text-xs ${
-                              question.correctAnswerIndex === optionIndex
-                                ? 'bg-green-500 text-white'
-                                : selectedAnswers[questionIndex] === optionIndex
-                                  ? 'bg-red-500 text-white'
-                                  : 'bg-gray-200 text-gray-700'
-                            }`}>
-                              {String.fromCharCode(65 + optionIndex)}
-                            </div>
-                            <p className="text-sm">{option}</p>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                    </div>
-                    
-                    <div className="ml-8 bg-blue-50 border border-blue-100 rounded-md p-3">
-                      <p className="text-sm">
-                        <span className="font-medium">정답 설명:</span> {question.explanation}
-                      </p>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-            
             <div className="flex justify-between">
               <Link href="/student" className="text-primary hover:underline">
                 학생 페이지로 돌아가기
@@ -338,7 +245,6 @@ export default function QuizClient({ quizId, initialQuizData }: QuizClientProps)
     );
   }
   
-  // 퀴즈 풀이 화면
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="max-w-2xl mx-auto bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden">
@@ -352,7 +258,6 @@ export default function QuizClient({ quizId, initialQuizData }: QuizClientProps)
         </div>
         
         <div className="p-6">
-          {/* 진행 바 */}
           <div className="mb-6">
             <div className="flex justify-between mb-2 text-sm">
               <span>문제 {currentQuestionIndex + 1} / {quiz.questions.length}</span>
@@ -366,7 +271,6 @@ export default function QuizClient({ quizId, initialQuizData }: QuizClientProps)
             </div>
           </div>
           
-          {/* 현재 문제 */}
           {currentQuestion && (
             <div className="mb-8">
               <h2 className="text-lg font-medium mb-4">
@@ -400,7 +304,6 @@ export default function QuizClient({ quizId, initialQuizData }: QuizClientProps)
             </div>
           )}
           
-          {/* 네비게이션 버튼 */}
           <div className="flex justify-between">
             <button
               onClick={handlePrevQuestion}
