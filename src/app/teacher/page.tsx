@@ -360,13 +360,13 @@ export default function TeacherPage() {
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
             </svg>
-            퀴즈 공유하기 (다른 컴퓨터에서 풀기)
+            URL로 퀴즈 공유하기
           </Link>
         </div>
 
         <div className="mt-4 p-3 bg-blue-50 text-blue-700 text-sm rounded-md">
-          <p><strong>새 기능!</strong> 이제 퀴즈를 다른 컴퓨터에서도 풀 수 있습니다.</p>
-          <p>퀴즈 공유하기 기능을 통해 URL로 퀴즈를 공유하고 어느 기기에서든 접근할 수 있습니다.</p>
+          <p><strong>데이터베이스 지원!</strong> 이제 퀴즈가 자동으로 중앙 데이터베이스에 저장됩니다.</p>
+          <p>학생들은 기본적으로 저장된 모든 퀴즈에 접근할 수 있으며, URL 공유 방식도 계속 사용 가능합니다.</p>
         </div>
       </div>
     </div>

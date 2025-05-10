@@ -11,91 +11,99 @@ export default function StudentPage() {
   const [progress, setProgress] = useState<StudentProgress | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [isLoadingFromDB, setIsLoadingFromDB] = useState<boolean>(true);
   
   useEffect(() => {
     // 퀴즈 목록 및 학생 진행 상황 로드
-    const loadData = () => {
+    const loadData = async () => {
       setLoading(true);
+      setIsLoadingFromDB(true);
 
-      // 퀴즈 목록 가져오기
-      const savedQuizzes = getAllQuizzes();
+      try {
+        // DB에서 퀴즈 목록 가져오기 (비동기)
+        const dbQuizzes = await getAllQuizzes();
+        console.log(`데이터베이스에서 ${dbQuizzes.length}개의 퀴즈를 로드했습니다.`);
 
-      // 기본 데모 퀴즈 추가 (항상 최소 하나의 퀴즈가 있도록)
-      const demoQuiz: Quiz = {
-        id: "quiz-demo-1",
-        title: "한반도 평화와 통일에 대한 이해",
-        description: "한반도 평화와 통일에 관한 기초 지식을 테스트하는 퀴즈입니다.",
-        questions: [
-          {
-            id: `q-demo-0`,
-            question: "한반도 분단의 국제적 배경으로 가장 적절한 것은?",
-            options: [
-              "제2차 세계대전 종전 이후 미국과 소련의 냉전 대립",
-              "일본의 식민지배 정책에 대한 국제사회의 비판",
-              "중국과 일본의 한반도 영토 분쟁",
-              "유럽 열강들의 극동 아시아 패권 경쟁"
-            ],
-            correctAnswerIndex: 0,
-            explanation: "한반도 분단은 제2차 세계대전 종전 이후 미국과 소련 간의 냉전 대립 구도 속에서 발생했습니다."
-          },
-          {
-            id: `q-demo-1`,
-            question: "남북한 통일 정책에 대한 설명 중 가장 옳은 것은?",
-            options: [
-              "남한과 북한의 통일 정책은 동일한 방식과 과정을 추구한다.",
-              "남한의 통일 정책은 평화적 통일을 기본 원칙으로 하고 있다.",
-              "북한의 통일 정책은 자유민주주의 체제로의 통합을 지향한다.",
-              "남북한 모두 제3국의 개입 없이 민족 내부 문제로만 해결하길 원한다."
-            ],
-            correctAnswerIndex: 1,
-            explanation: "남한의 통일 정책은 평화적 통일을 기본 원칙으로 하며, 단계적이고 점진적인 방식의 통일을 추구합니다."
-          },
-          {
-            id: `q-demo-2`,
-            question: "통일교육의 목표로 가장 적절한 것은?",
-            options: [
-              "평화 의식 함양과 민주 시민 의식 고취",
-              "북한 실상에 대한 객관적 이해 증진",
-              "통일의 필요성 인식과 통일의지 함양",
-              "반공 이데올로기 강화와 안보 의식 고취"
-            ],
-            correctAnswerIndex: 2,
-            explanation: "통일교육은 통일의 필요성을 인식하고 통일에 대한 의지를 함양하는 것을 중요한 목표로 합니다."
-          }
-        ],
-        category: "unification_understanding",
-        sourceContent: {
-          id: "demo-content-1",
+        // 기본 데모 퀴즈 추가 (항상 최소 하나의 퀴즈가 있도록)
+        const demoQuiz: Quiz = {
+          id: "quiz-demo-1",
           title: "한반도 평화와 통일에 대한 이해",
-          snippet: "한반도 평화와 통일 과정에서 고려해야 할 다양한 관점과 이슈들에 대한 종합적인 분석...",
-          source: "통일부",
-          sourceUrl: "https://www.unikorea.go.kr/",
-          imageUrl: "https://picsum.photos/id/237/200/200",
-          publishedAt: "2023-04-15T09:00:00Z",
-          contentType: "article"
-        },
-        createdAt: "2023-05-01T00:00:00Z",
-        difficulty: "medium",
-        targetGrade: ["elementary", "middle", "high"],
-      };
+          description: "한반도 평화와 통일에 관한 기초 지식을 테스트하는 퀴즈입니다.",
+          questions: [
+            {
+              id: `q-demo-0`,
+              question: "한반도 분단의 국제적 배경으로 가장 적절한 것은?",
+              options: [
+                "제2차 세계대전 종전 이후 미국과 소련의 냉전 대립",
+                "일본의 식민지배 정책에 대한 국제사회의 비판",
+                "중국과 일본의 한반도 영토 분쟁",
+                "유럽 열강들의 극동 아시아 패권 경쟁"
+              ],
+              correctAnswerIndex: 0,
+              explanation: "한반도 분단은 제2차 세계대전 종전 이후 미국과 소련 간의 냉전 대립 구도 속에서 발생했습니다."
+            },
+            {
+              id: `q-demo-1`,
+              question: "남북한 통일 정책에 대한 설명 중 가장 옳은 것은?",
+              options: [
+                "남한과 북한의 통일 정책은 동일한 방식과 과정을 추구한다.",
+                "남한의 통일 정책은 평화적 통일을 기본 원칙으로 하고 있다.",
+                "북한의 통일 정책은 자유민주주의 체제로의 통합을 지향한다.",
+                "남북한 모두 제3국의 개입 없이 민족 내부 문제로만 해결하길 원한다."
+              ],
+              correctAnswerIndex: 1,
+              explanation: "남한의 통일 정책은 평화적 통일을 기본 원칙으로 하며, 단계적이고 점진적인 방식의 통일을 추구합니다."
+            },
+            {
+              id: `q-demo-2`,
+              question: "통일교육의 목표로 가장 적절한 것은?",
+              options: [
+                "평화 의식 함양과 민주 시민 의식 고취",
+                "북한 실상에 대한 객관적 이해 증진",
+                "통일의 필요성 인식과 통일의지 함양",
+                "반공 이데올로기 강화와 안보 의식 고취"
+              ],
+              correctAnswerIndex: 2,
+              explanation: "통일교육은 통일의 필요성을 인식하고 통일에 대한 의지를 함양하는 것을 중요한 목표로 합니다."
+            }
+          ],
+          category: "unification_understanding",
+          sourceContent: {
+            id: "demo-content-1",
+            title: "한반도 평화와 통일에 대한 이해",
+            snippet: "한반도 평화와 통일 과정에서 고려해야 할 다양한 관점과 이슈들에 대한 종합적인 분석...",
+            source: "통일부",
+            sourceUrl: "https://www.unikorea.go.kr/",
+            imageUrl: "https://picsum.photos/id/237/200/200",
+            publishedAt: "2023-04-15T09:00:00Z",
+            contentType: "article"
+          },
+          createdAt: "2023-05-01T00:00:00Z",
+          difficulty: "medium",
+          targetGrade: ["elementary", "middle", "high"],
+        };
 
-      // 기존 퀴즈가 없거나 데모 퀴즈가 없는 경우 추가
-      if (savedQuizzes.length === 0 || !savedQuizzes.some(quiz => quiz.id === demoQuiz.id)) {
-        const allQuizzes = [...savedQuizzes, demoQuiz];
-        setQuizzes(allQuizzes);
-
-        // 로컬스토리지에 저장
-        try {
-          localStorage.setItem('savedQuizzes', JSON.stringify(allQuizzes));
-        } catch (error) {
-          console.error('퀴즈 저장 오류:', error);
+        // 기존 퀴즈가 없거나 데모 퀴즈가 없는 경우에만 추가
+        if (dbQuizzes.length === 0 || !dbQuizzes.some(quiz => quiz.id === demoQuiz.id)) {
+          const allQuizzes = [...dbQuizzes, demoQuiz];
+          setQuizzes(allQuizzes);
+        } else {
+          setQuizzes(dbQuizzes);
         }
-      } else {
-        setQuizzes(savedQuizzes);
+      } catch (error) {
+        console.error('퀴즈 불러오기 오류:', error);
+        setQuizzes([]);
+      } finally {
+        setIsLoadingFromDB(false);
       }
 
-      // 학생 진행 상황 가져오기
+      // 학생 진행 상황 가져오기 (DB와 로컬 스토리지 모두 시도)
       try {
+        // 서버에서 학생 진행 상황 가져오기 (추후 구현)
+        // const { getStudentProgressFromDB } = await import('./supabase-api');
+        // const dbProgress = await getStudentProgressFromDB('student-1');
+
+        // 로컬 스토리지에서 진행 상황 가져오기
         const savedProgress = localStorage.getItem('studentProgress');
         if (savedProgress) {
           setProgress(JSON.parse(savedProgress));
@@ -153,16 +161,16 @@ export default function StudentPage() {
           다양한 주제의 통일교육 퀴즈를 풀고 통일 지식을 쌓아보세요. 5일 연속으로 퀴즈를 완료하면 통일교육 수료 인증서를 받을 수 있습니다.
         </p>
 
-        <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6">
+        <div className="bg-blue-50 border-l-4 border-blue-400 p-4 mb-6">
           <div className="flex">
             <div className="flex-shrink-0">
-              <svg className="h-5 w-5 text-yellow-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+              <svg className="h-5 w-5 text-blue-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2h-1V9a1 1 0 00-1-1z" clipRule="evenodd" />
               </svg>
             </div>
             <div className="ml-3">
-              <p className="text-sm text-yellow-700">
-                <strong>안내:</strong> 이 페이지에는 기본 데모 퀴즈만 표시됩니다. 선생님이 만든 퀴즈를 풀려면 선생님이 공유한 링크를 통해 접속해야 합니다.
+              <p className="text-sm text-blue-700">
+                <strong>알림:</strong> 이 페이지에는 모든 선생님들이 만든 퀴즈가 표시됩니다. 특정 퀴즈를 바로 풀고 싶다면 선생님이 공유한 URL 링크를 통해 직접 접속할 수도 있습니다.
               </p>
             </div>
           </div>
@@ -249,6 +257,9 @@ export default function StudentPage() {
         <div className="text-center py-12">
           <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
           <p className="mt-2 text-gray-600">퀴즈 목록을 불러오는 중...</p>
+          {isLoadingFromDB && (
+            <p className="mt-1 text-xs text-gray-500">데이터베이스에서 모든 퀴즈를 가져오는 중입니다...</p>
+          )}
         </div>
       ) : filteredQuizzes.length === 0 ? (
         <div className="bg-gray-50 rounded-lg p-8 text-center">
