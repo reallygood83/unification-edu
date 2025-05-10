@@ -93,31 +93,55 @@ export async function getAllQuizzesFromDB(): Promise<Quiz[]> {
       .from('quizzes')
       .select('*')
       .order('created_at', { ascending: false });
-    
+
     if (error) {
       console.error('퀴즈 조회 오류 (DB):', error.message);
       // 로컬 스토리지에서 대체
       return getAllQuizzesFromLocalStorage();
     }
-    
+
     if (!data || data.length === 0) {
       console.log('DB에 저장된 퀴즈가 없습니다. 로컬 스토리지 확인...');
       return getAllQuizzesFromLocalStorage();
     }
-    
+
     // DB 형식을 앱 형식으로 변환
-    const quizzes: Quiz[] = data.map(item => ({
-      id: item.id,
-      title: item.title,
-      description: item.description,
-      category: item.category,
-      difficulty: item.difficulty as 'easy' | 'medium' | 'hard',
-      questions: item.questions,
-      sourceContent: item.source_content,
-      targetGrade: item.target_grade,
-      createdAt: item.created_at
-    }));
-    
+    const quizzes: Quiz[] = data.map(item => {
+      // 각 필드에 대해 유효성 검사 및 기본값 설정
+      const safeQuiz: Quiz = {
+        id: item.id || `quiz-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+        title: item.title || '제목 없는 퀴즈',
+        description: item.description || '설명이 없는 퀴즈입니다.',
+        category: item.category || 'unification_understanding',
+        difficulty: (item.difficulty as 'easy' | 'medium' | 'hard') || 'medium',
+        // 문제 배열이 없거나 유효하지 않은 경우 빈 배열로 초기화
+        questions: Array.isArray(item.questions) ? item.questions.map((q, index) => ({
+          id: q?.id || `q-${Date.now()}-${index}`,
+          question: q?.question || `문제 #${index+1}`,
+          options: Array.isArray(q?.options) ? q.options : ['옵션 1', '옵션 2', '옵션 3', '옵션 4'],
+          correctAnswerIndex: typeof q?.correctAnswerIndex === 'number' ? q.correctAnswerIndex : 0,
+          explanation: q?.explanation || '설명이 제공되지 않았습니다.'
+        })) : [],
+        // sourceContent가 없거나 유효하지 않은 경우 기본값 설정
+        sourceContent: item.source_content ? {
+          id: item.source_content.id || 'default-source',
+          title: item.source_content.title || '기본 출처',
+          source: item.source_content.source || '통일교육원',
+          sourceUrl: item.source_content.sourceUrl || 'https://www.unikorea.go.kr/',
+          contentType: item.source_content.contentType || 'article'
+        } : {
+          id: 'default-source',
+          title: '기본 출처',
+          source: '통일교육원',
+          sourceUrl: 'https://www.unikorea.go.kr/',
+          contentType: 'article'
+        },
+        targetGrade: Array.isArray(item.target_grade) ? item.target_grade : ['elementary', 'middle', 'high'],
+        createdAt: item.created_at || new Date().toISOString()
+      };
+      return safeQuiz;
+    });
+
     console.log(`DB에서 ${quizzes.length}개의 퀴즈를 로드했습니다.`);
     return quizzes;
   } catch (error) {
@@ -149,6 +173,11 @@ function getAllQuizzesFromLocalStorage(): Quiz[] {
  */
 export async function getQuizByIdFromDB(id: string): Promise<Quiz | null> {
   try {
+    if (!id) {
+      console.error('유효하지 않은 퀴즈 ID로 조회 요청됨');
+      return null;
+    }
+
     // Supabase 클라이언트 가져오기
     const supabase = await getSupabase();
     if (!supabase) {
@@ -162,31 +191,51 @@ export async function getQuizByIdFromDB(id: string): Promise<Quiz | null> {
       .select('*')
       .eq('id', id)
       .single();
-    
+
     if (error) {
       console.error(`ID ${id}로 퀴즈 조회 오류 (DB):`, error.message);
       // 로컬 스토리지에서 대체
       return getQuizByIdFromLocalStorage(id);
     }
-    
+
     if (!data) {
       console.log(`ID ${id}의 퀴즈를 DB에서 찾을 수 없습니다. 로컬 스토리지 확인...`);
       return getQuizByIdFromLocalStorage(id);
     }
-    
-    // DB 형식을 앱 형식으로 변환
+
+    // DB 형식을 앱 형식으로 변환 - 더 강화된 null 체크와 기본값 추가
     const quiz: Quiz = {
-      id: data.id,
-      title: data.title,
-      description: data.description,
-      category: data.category,
-      difficulty: data.difficulty as 'easy' | 'medium' | 'hard',
-      questions: data.questions,
-      sourceContent: data.source_content,
-      targetGrade: data.target_grade,
-      createdAt: data.created_at
+      id: data.id || `quiz-${Date.now()}`,
+      title: data.title || '제목 없는 퀴즈',
+      description: data.description || '설명이 없는 퀴즈입니다.',
+      category: data.category || 'unification_understanding',
+      difficulty: (data.difficulty as 'easy' | 'medium' | 'hard') || 'medium',
+      // 문제 배열이 없거나 유효하지 않은 경우 빈 배열로 초기화
+      questions: Array.isArray(data.questions) ? data.questions.map((q, index) => ({
+        id: q?.id || `q-${Date.now()}-${index}`,
+        question: q?.question || `문제 #${index+1}`,
+        options: Array.isArray(q?.options) ? q.options : ['옵션 1', '옵션 2', '옵션 3', '옵션 4'],
+        correctAnswerIndex: typeof q?.correctAnswerIndex === 'number' ? q.correctAnswerIndex : 0,
+        explanation: q?.explanation || '설명이 제공되지 않았습니다.'
+      })) : [],
+      // sourceContent가 없거나 유효하지 않은 경우 기본값 설정
+      sourceContent: data.source_content ? {
+        id: data.source_content.id || 'default-source',
+        title: data.source_content.title || '기본 출처',
+        source: data.source_content.source || '통일교육원',
+        sourceUrl: data.source_content.sourceUrl || 'https://www.unikorea.go.kr/',
+        contentType: data.source_content.contentType || 'article'
+      } : {
+        id: 'default-source',
+        title: '기본 출처',
+        source: '통일교육원',
+        sourceUrl: 'https://www.unikorea.go.kr/',
+        contentType: 'article'
+      },
+      targetGrade: Array.isArray(data.target_grade) ? data.target_grade : ['elementary', 'middle', 'high'],
+      createdAt: data.created_at || new Date().toISOString()
     };
-    
+
     console.log(`DB에서 퀴즈 "${quiz.title}"를 로드했습니다.`);
     return quiz;
   } catch (error) {

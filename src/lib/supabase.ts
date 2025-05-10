@@ -61,13 +61,29 @@ export async function getSupabase(): Promise<SupabaseClient> {
     // 실제 Supabase 연결을 시도
     if (supabaseUrl && supabaseAnonKey && typeof window !== 'undefined') {
       try {
-        // 동적 임포트 시도 (개발 환경 및 로컬에서만 작동)
-        const SupabaseModule = await import('@supabase/supabase-js');
-        const client = SupabaseModule.createClient(supabaseUrl, supabaseAnonKey);
-        console.log('실제 Supabase 클라이언트 생성 성공');
-        return client as unknown as SupabaseClient;
+        // 동적 임포트 시도 - 더 강력한 오류 처리 추가
+        const SupabaseModule = await Promise.resolve().then(() => import('@supabase/supabase-js')).catch(err => {
+          console.warn('Supabase 모듈 임포트 실패, 모의 클라이언트 사용:', err.message);
+          return null;
+        });
+
+        // 모듈 로드에 실패한 경우
+        if (!SupabaseModule) {
+          console.warn('Supabase 모듈을 찾을 수 없음, 모의 클라이언트 사용');
+          return mockSupabaseClient;
+        }
+
+        try {
+          // 클라이언트 생성을 별도의 try-catch로 분리
+          const client = SupabaseModule.createClient(supabaseUrl, supabaseAnonKey);
+          console.log('실제 Supabase 클라이언트 생성 성공');
+          return client as unknown as SupabaseClient;
+        } catch (clientError) {
+          console.error('Supabase 클라이언트 생성 실패:', clientError);
+          return mockSupabaseClient;
+        }
       } catch (importError) {
-        console.warn('Supabase 모듈 임포트 실패, 모의 클라이언트 사용:', importError);
+        console.warn('Supabase 모듈 임포트 예상치 못한 오류, 모의 클라이언트 사용:', importError);
         return mockSupabaseClient;
       }
     }
