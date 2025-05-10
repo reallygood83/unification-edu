@@ -83,8 +83,13 @@ export default function StudentPage() {
           targetGrade: ["elementary", "middle", "high"],
         };
 
+        // 데이터베이스 결과 확인
+        if (!dbQuizzes || !Array.isArray(dbQuizzes)) {
+          console.warn('DB에서 유효한 퀴즈 목록을 가져오지 못했습니다. 데모 퀴즈만 사용합니다.');
+          setQuizzes([demoQuiz]);
+        }
         // 기존 퀴즈가 없거나 데모 퀴즈가 없는 경우에만 추가
-        if (dbQuizzes.length === 0 || !dbQuizzes.some(quiz => quiz.id === demoQuiz.id)) {
+        else if (dbQuizzes.length === 0 || !dbQuizzes.some(quiz => quiz.id === demoQuiz.id)) {
           const allQuizzes = [...dbQuizzes, demoQuiz];
           setQuizzes(allQuizzes);
         } else {

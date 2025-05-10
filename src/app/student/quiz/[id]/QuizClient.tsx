@@ -31,6 +31,21 @@ export default function QuizClient({ quizId, initialQuizData }: QuizClientProps)
     try {
       setLoading(true);
 
+      try {
+        // 먼저 API로부터 비동기적으로 퀴즈 가져오기 시도
+        const { getQuizById } = await import('@/lib/api-services');
+        const dbQuiz = await getQuizById(quizId);
+
+        if (dbQuiz) {
+          console.log('DB에서 퀴즈 로드 성공:', dbQuiz.title);
+          setQuiz(dbQuiz);
+          setLoading(false);
+          return;
+        }
+      } catch (dbError) {
+        console.warn('DB에서 퀴즈 로드 실패, API 폴백:', dbError);
+      }
+
       // 새로운 퀴즈 API 라우트 사용 (query parameter 방식)
       const response = await fetch(`/api/quiz?id=${quizId}`);
 
@@ -45,7 +60,7 @@ export default function QuizClient({ quizId, initialQuizData }: QuizClientProps)
       }
 
       setQuiz(data);
-      console.log('퀴즈 데이터 로드 성공:', data.title);
+      console.log('API에서 퀴즈 데이터 로드 성공:', data.title);
     } catch (error) {
       console.error('퀴즈 불러오기 오류:', error);
       setError('퀴즈를 불러오는데 실패했습니다. 잠시 후 다시 시도해주세요.');
