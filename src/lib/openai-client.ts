@@ -38,6 +38,11 @@ export async function searchContents(query: string, targetGrade?: string): Promi
         // 모의 데이터 사용 여부 로깅
         if (naverData.mockDataUsed) {
           console.log('모의 데이터 사용 중:', naverData.message || '네이버 API 사용 불가');
+
+          // 디버그 정보가 있으면 출력
+          if (naverData.debug) {
+            console.log('네이버 API 키 디버그 정보:', naverData.debug);
+          }
         } else {
           console.log('실제 네이버 API 데이터 사용 중');
         }

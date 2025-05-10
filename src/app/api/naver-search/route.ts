@@ -53,14 +53,16 @@ export async function POST(request: NextRequest) {
     const requestData = await request.json();
     const { query, targetGrade } = requestData;
     
-    // API 키 확인
+    // API 키 확인 (Vercel 환경에서의 문제 해결을 위한 추가 안전 검증)
     const isValidClientId = NAVER_CLIENT_ID &&
+                          typeof NAVER_CLIENT_ID === 'string' &&
                           NAVER_CLIENT_ID !== 'your_naver_client_id_here' &&
-                          NAVER_CLIENT_ID.length > 10;
+                          NAVER_CLIENT_ID.length > 5;
 
     const isValidClientSecret = NAVER_CLIENT_SECRET &&
+                              typeof NAVER_CLIENT_SECRET === 'string' &&
                               NAVER_CLIENT_SECRET !== 'your_naver_client_secret_here' &&
-                              NAVER_CLIENT_SECRET.length > 10;
+                              NAVER_CLIENT_SECRET.length > 5;
 
     if (!isValidClientId || !isValidClientSecret) {
       console.error('네이버 API 키가 설정되지 않았거나 유효하지 않습니다.', {
@@ -69,15 +71,33 @@ export async function POST(request: NextRequest) {
         clientIdValid: isValidClientId,
         clientSecretValid: isValidClientSecret,
         clientIdLength: NAVER_CLIENT_ID ? NAVER_CLIENT_ID.length : 0,
-        clientSecretLength: NAVER_CLIENT_SECRET ? NAVER_CLIENT_SECRET.length : 0
+        clientSecretLength: NAVER_CLIENT_SECRET ? NAVER_CLIENT_SECRET.length : 0,
+        clientIdType: NAVER_CLIENT_ID ? typeof NAVER_CLIENT_ID : 'undefined',
+        clientSecretType: NAVER_CLIENT_SECRET ? typeof NAVER_CLIENT_SECRET : 'undefined',
+        nodeEnv: process.env.NODE_ENV || 'unknown'
       });
 
       // 실제 API 키가 없으므로 모의 데이터 반환
+      // 디버그 정보를 좀 더 상세하게 포함
+      const apiKeyDebugInfo = {
+        id_exists: !!NAVER_CLIENT_ID,
+        id_valid: isValidClientId,
+        id_length: NAVER_CLIENT_ID ? NAVER_CLIENT_ID.length : 0,
+        id_type: NAVER_CLIENT_ID ? typeof NAVER_CLIENT_ID : 'undefined',
+        secret_exists: !!NAVER_CLIENT_SECRET,
+        secret_valid: isValidClientSecret,
+        secret_length: NAVER_CLIENT_SECRET ? NAVER_CLIENT_SECRET.length : 0,
+        secret_type: NAVER_CLIENT_SECRET ? typeof NAVER_CLIENT_SECRET : 'undefined'
+      };
+
+      console.log('네이버 API 키 디버그 정보:', apiKeyDebugInfo);
+
       return NextResponse.json({
         success: true, // 클라이언트에 오류 없이 처리한 것처럼 전달
         mockDataUsed: true,
         message: `API 키가 설정되지 않아 모의 데이터를 사용합니다. .env.local 파일 또는 Vercel 환경변수에 NAVER_CLIENT_ID와 NAVER_CLIENT_SECRET을 올바르게 설정해주세요. (ID: ${isValidClientId ? '유효함' : '유효하지 않음'}, Secret: ${isValidClientSecret ? '유효함' : '유효하지 않음'})`,
-        data: getMockData(query)
+        data: getMockData(query),
+        debug: apiKeyDebugInfo // 클라이언트측에서 디버깅할 수 있도록 정보 추가
       });
     }
 
