@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
+import { Quiz } from '@/types';
 
 /**
  * 퀴즈 API - ID로 퀴즈 조회 (query parameter 사용)
- * 서버 사이드에서는 localStorage를 사용할 수 없으므로
- * 기본 데모 퀴즈 데이터를 제공합니다.
+ * 서버 사이드에서 쿠키에 저장된 퀴즈 데이터를 가져옵니다.
+ * 쿠키가 없을 경우 기본 데모 퀴즈 데이터를 제공합니다.
  */
 export async function GET(request: NextRequest) {
   try {
@@ -21,7 +23,32 @@ export async function GET(request: NextRequest) {
     // 로그 추가
     console.log(`퀴즈 API 호출 - 퀴즈 ID: ${quizId}`);
 
-    // 데모 퀴즈 데이터 생성 (실제로는 데이터베이스에서 가져와야 함)
+    // 쿠키에서 저장된 퀴즈 데이터 가져오기 시도
+    const cookieStore = cookies();
+    const savedQuizzesCookie = cookieStore.get('savedQuizzes');
+
+    let savedQuizzes: Quiz[] = [];
+    let targetQuiz = null;
+
+    if (savedQuizzesCookie?.value) {
+      try {
+        savedQuizzes = JSON.parse(decodeURIComponent(savedQuizzesCookie.value));
+        targetQuiz = savedQuizzes.find(quiz => quiz.id === quizId);
+
+        if (targetQuiz) {
+          console.log('쿠키에서 퀴즈를 찾았습니다:', targetQuiz.title);
+          return NextResponse.json(targetQuiz);
+        } else {
+          console.log('쿠키에서 해당 ID의 퀴즈를 찾을 수 없습니다. 기본 퀴즈를 반환합니다.');
+        }
+      } catch (cookieError) {
+        console.error('쿠키 파싱 오류:', cookieError);
+      }
+    } else {
+      console.log('저장된 퀴즈 쿠키가 없습니다. 기본 퀴즈를 반환합니다.');
+    }
+
+    // 쿠키에서 찾지 못했거나 오류가 발생한 경우 기본 데모 퀴즈 반환
     const demoQuiz = {
       id: quizId,
       title: "한반도 평화와 통일에 대한 이해",

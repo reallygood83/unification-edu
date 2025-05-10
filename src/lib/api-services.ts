@@ -280,18 +280,23 @@ export async function generateQuiz(
 }
 
 /**
- * 새 퀴즈 저장 (localStorage 사용, 실제 구현에서는 데이터베이스 사용)
+ * 새 퀴즈 저장 (localStorage와 쿠키 모두 사용)
+ * localStorage는 클라이언트측 접근용, 쿠키는 서버측 접근용
  */
 export function saveQuiz(quiz: Quiz): boolean {
   try {
     // 기존 퀴즈 목록 가져오기
     const savedQuizzes = JSON.parse(localStorage.getItem('savedQuizzes') || '[]') as Quiz[];
-    
+
     // 새 퀴즈 추가
     savedQuizzes.push(quiz);
-    
-    // 저장
+
+    // localStorage에 저장
     localStorage.setItem('savedQuizzes', JSON.stringify(savedQuizzes));
+
+    // 쿠키에도 저장 (서버 사이드에서 접근 가능하도록)
+    document.cookie = `savedQuizzes=${encodeURIComponent(JSON.stringify(savedQuizzes))}; path=/; max-age=86400`;
+
     return true;
   } catch (error) {
     console.error('퀴즈 저장 오류:', error);
