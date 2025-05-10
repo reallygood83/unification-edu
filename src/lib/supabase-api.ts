@@ -1,24 +1,47 @@
 import { Quiz, QuizAttempt, StudentProgress } from '@/types';
 import { getSupabase } from './supabase';
 
+// UUID 헬퍼 함수 - 표준 UUID v4 형식의 문자열 생성
+function generateUUID(): string {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+}
+
+// 기존 ID를 Supabase UUID 형식으로 변환
+function convertToUUID(id: string): string {
+  // 이미 UUID 형식이면 그대로 반환
+  if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
+    return id;
+  }
+
+  // 아니면 새 UUID 생성
+  return generateUUID();
+}
+
 /**
  * DB에 새 퀴즈 저장
  * 성공 시 저장된 퀴즈 ID 반환, 실패 시 null 반환
  */
 export async function saveQuizToDB(quiz: Quiz): Promise<string | null> {
   try {
+    // UUID 형식으로 ID 변환 또는 신규 생성
+    const uuid = quiz.id ? convertToUUID(quiz.id) : generateUUID();
+
     // 데이터베이스 형식에 맞게 변환
     const dbQuiz = {
-      id: quiz.id,
-      title: quiz.title,
-      description: quiz.description,
-      category: quiz.category,
-      difficulty: quiz.difficulty,
-      questions: quiz.questions,
-      source_content: quiz.sourceContent,
-      target_grade: quiz.targetGrade
+      id: uuid,
+      title: quiz.title || '제목 없는 퀴즈',
+      description: quiz.description || '',
+      category: quiz.category || 'unification_understanding',
+      difficulty: quiz.difficulty || 'medium',
+      questions: Array.isArray(quiz.questions) ? quiz.questions : [],
+      source_content: quiz.sourceContent || null,
+      target_grade: Array.isArray(quiz.targetGrade) ? quiz.targetGrade : ['elementary', 'middle', 'high'],
+      created_at: new Date().toISOString()
     };
-    
+
     // Supabase 클라이언트 가져오기
     const supabase = await getSupabase();
     if (!supabase) {
@@ -26,26 +49,33 @@ export async function saveQuizToDB(quiz: Quiz): Promise<string | null> {
       return null;
     }
 
+    console.log('Supabase에 퀴즈 저장 시도 - UUID:', uuid);
+
     // Supabase에 퀴즈 저장
     const { data, error } = await supabase
       .from('quizzes')
       .insert([dbQuiz])
       .select('id')
       .single();
-    
+
     if (error) {
       console.error('퀴즈 저장 오류 (DB):', error.message);
+      // 기존 ID를 유지한 채 로컬 스토리지에만 저장
+      saveQuizToLocalStorage(quiz);
       return null;
     }
-    
+
     console.log('퀴즈가 DB에 성공적으로 저장되었습니다:', data.id);
-    
-    // 백워드 호환성: 로컬 스토리지에도 퀴즈 저장
-    saveQuizToLocalStorage(quiz);
-    
+
+    // 백워드 호환성: 로컬 스토리지에도 퀴즈 저장 (UUID로 업데이트된 버전)
+    const updatedQuiz = {...quiz, id: uuid};
+    saveQuizToLocalStorage(updatedQuiz);
+
     return data.id;
   } catch (error) {
     console.error('퀴즈 저장 중 예외 발생:', error);
+    // 오류 발생 시 로컬 스토리지에만 저장
+    saveQuizToLocalStorage(quiz);
     return null;
   }
 }
@@ -267,24 +297,29 @@ function getQuizByIdFromLocalStorage(id: string): Quiz | null {
  */
 export async function saveStudentProgressToDB(progress: StudentProgress): Promise<boolean> {
   try {
+    // UUID 형식으로 ID 변환 또는 신규 생성
+    const uuid = progress.id ? convertToUUID(progress.id) : generateUUID();
+
     // DB 형식으로 변환
     const dbProgress = {
-      id: progress.id,
-      user_id: progress.userId,
-      streak_count: progress.streakCount,
-      last_completed_date: progress.lastCompletedDate,
-      completed_days: progress.completedDays,
-      certificate_earned: progress.certificateEarned,
-      quiz_attempts: progress.quizAttempts
+      id: uuid,
+      user_id: progress.userId || `user-${Date.now()}`,
+      streak_count: progress.streakCount || 0,
+      last_completed_date: progress.lastCompletedDate || null,
+      completed_days: progress.completedDays || 0,
+      certificate_earned: progress.certificateEarned || false,
+      quiz_attempts: Array.isArray(progress.quizAttempts) ? progress.quizAttempts : []
     };
-    
+
     // Supabase 클라이언트 가져오기
     const supabase = await getSupabase();
     if (!supabase) {
       console.error('Supabase 클라이언트를 초기화할 수 없습니다.');
-      saveStudentProgressToLocalStorage(progress);
+      saveStudentProgressToLocalStorage({...progress, id: uuid});
       return false;
     }
+
+    console.log('Supabase에 학생 진행 상황 저장 시도 - UUID:', uuid);
 
     // 기존 데이터 있는지 확인
     const { data: existingData } = await supabase
@@ -307,17 +342,17 @@ export async function saveStudentProgressToDB(progress: StudentProgress): Promis
         .from('student_progress')
         .insert([dbProgress]);
     }
-    
+
     if (result.error) {
       console.error('진행 상황 저장 오류 (DB):', result.error.message);
       // 로컬 스토리지에 백업
-      saveStudentProgressToLocalStorage(progress);
+      saveStudentProgressToLocalStorage({...progress, id: uuid});
       return false;
     }
-    
+
     console.log('학생 진행 상황이 DB에 성공적으로 저장되었습니다.');
     // 로컬 스토리지에도 저장 (백워드 호환성)
-    saveStudentProgressToLocalStorage(progress);
+    saveStudentProgressToLocalStorage({...progress, id: uuid});
     return true;
   } catch (error) {
     console.error('진행 상황 저장 중 예외 발생:', error);
