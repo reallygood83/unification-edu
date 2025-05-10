@@ -31,15 +31,21 @@ export default function QuizClient({ quizId, initialQuizData }: QuizClientProps)
     try {
       setLoading(true);
 
-      // 모의 API 라우트에서 퀴즈 데이터 가져오기
-      const response = await fetch(`/api/mock/quiz/${quizId}`);
+      // 새로운 퀴즈 API 라우트 사용 (query parameter 방식)
+      const response = await fetch(`/api/quiz?id=${quizId}`);
 
       if (!response.ok) {
         throw new Error('퀴즈를 불러오는데 실패했습니다.');
       }
 
       const data = await response.json();
+
+      if (!data || !data.questions || data.questions.length === 0) {
+        throw new Error('유효하지 않은 퀴즈 데이터입니다.');
+      }
+
       setQuiz(data);
+      console.log('퀴즈 데이터 로드 성공:', data.title);
     } catch (error) {
       console.error('퀴즈 불러오기 오류:', error);
       setError('퀴즈를 불러오는데 실패했습니다. 잠시 후 다시 시도해주세요.');

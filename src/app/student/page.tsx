@@ -16,11 +16,84 @@ export default function StudentPage() {
     // 퀴즈 목록 및 학생 진행 상황 로드
     const loadData = () => {
       setLoading(true);
-      
+
       // 퀴즈 목록 가져오기
       const savedQuizzes = getAllQuizzes();
-      setQuizzes(savedQuizzes);
-      
+
+      // 기본 데모 퀴즈 추가 (항상 최소 하나의 퀴즈가 있도록)
+      const demoQuiz: Quiz = {
+        id: "quiz-demo-1",
+        title: "한반도 평화와 통일에 대한 이해",
+        description: "한반도 평화와 통일에 관한 기초 지식을 테스트하는 퀴즈입니다.",
+        questions: [
+          {
+            id: `q-demo-0`,
+            question: "한반도 분단의 국제적 배경으로 가장 적절한 것은?",
+            options: [
+              "제2차 세계대전 종전 이후 미국과 소련의 냉전 대립",
+              "일본의 식민지배 정책에 대한 국제사회의 비판",
+              "중국과 일본의 한반도 영토 분쟁",
+              "유럽 열강들의 극동 아시아 패권 경쟁"
+            ],
+            correctAnswerIndex: 0,
+            explanation: "한반도 분단은 제2차 세계대전 종전 이후 미국과 소련 간의 냉전 대립 구도 속에서 발생했습니다."
+          },
+          {
+            id: `q-demo-1`,
+            question: "남북한 통일 정책에 대한 설명 중 가장 옳은 것은?",
+            options: [
+              "남한과 북한의 통일 정책은 동일한 방식과 과정을 추구한다.",
+              "남한의 통일 정책은 평화적 통일을 기본 원칙으로 하고 있다.",
+              "북한의 통일 정책은 자유민주주의 체제로의 통합을 지향한다.",
+              "남북한 모두 제3국의 개입 없이 민족 내부 문제로만 해결하길 원한다."
+            ],
+            correctAnswerIndex: 1,
+            explanation: "남한의 통일 정책은 평화적 통일을 기본 원칙으로 하며, 단계적이고 점진적인 방식의 통일을 추구합니다."
+          },
+          {
+            id: `q-demo-2`,
+            question: "통일교육의 목표로 가장 적절한 것은?",
+            options: [
+              "평화 의식 함양과 민주 시민 의식 고취",
+              "북한 실상에 대한 객관적 이해 증진",
+              "통일의 필요성 인식과 통일의지 함양",
+              "반공 이데올로기 강화와 안보 의식 고취"
+            ],
+            correctAnswerIndex: 2,
+            explanation: "통일교육은 통일의 필요성을 인식하고 통일에 대한 의지를 함양하는 것을 중요한 목표로 합니다."
+          }
+        ],
+        category: "unification_understanding",
+        sourceContent: {
+          id: "demo-content-1",
+          title: "한반도 평화와 통일에 대한 이해",
+          snippet: "한반도 평화와 통일 과정에서 고려해야 할 다양한 관점과 이슈들에 대한 종합적인 분석...",
+          source: "통일부",
+          sourceUrl: "https://www.unikorea.go.kr/",
+          imageUrl: "https://picsum.photos/id/237/200/200",
+          publishedAt: "2023-04-15T09:00:00Z",
+          contentType: "article"
+        },
+        createdAt: "2023-05-01T00:00:00Z",
+        difficulty: "medium",
+        targetGrade: ["elementary", "middle", "high"],
+      };
+
+      // 기존 퀴즈가 없거나 데모 퀴즈가 없는 경우 추가
+      if (savedQuizzes.length === 0 || !savedQuizzes.some(quiz => quiz.id === demoQuiz.id)) {
+        const allQuizzes = [...savedQuizzes, demoQuiz];
+        setQuizzes(allQuizzes);
+
+        // 로컬스토리지에 저장
+        try {
+          localStorage.setItem('savedQuizzes', JSON.stringify(allQuizzes));
+        } catch (error) {
+          console.error('퀴즈 저장 오류:', error);
+        }
+      } else {
+        setQuizzes(savedQuizzes);
+      }
+
       // 학생 진행 상황 가져오기
       try {
         const savedProgress = localStorage.getItem('studentProgress');
@@ -43,10 +116,10 @@ export default function StudentPage() {
       } catch (error) {
         console.error('진행 상황 로드 오류:', error);
       }
-      
+
       setLoading(false);
     };
-    
+
     loadData();
   }, []);
   
