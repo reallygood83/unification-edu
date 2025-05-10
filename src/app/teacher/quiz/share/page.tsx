@@ -137,7 +137,8 @@ export default function ShareQuizPage() {
             <div className="bg-white border border-gray-200 rounded-md p-6 mb-6">
               <h2 className="text-lg font-semibold mb-4">공유 링크</h2>
               <p className="text-sm text-gray-600 mb-4">
-                아래 링크를 학생들에게 공유하면, 데이터베이스 없이도 퀴즈에 접근할 수 있습니다.
+                <strong className="text-red-600">중요:</strong> 학생들이 퀴즈에 접근하는 유일한 방법은 이 링크를 공유하는 것입니다.
+                학생 페이지에서는 기본 데모 퀴즈만 표시되므로, 반드시 아래 링크를 복사하여 학생들에게 공유해야 합니다.
                 링크에는 퀴즈 데이터가 인코딩되어 있어 어느 컴퓨터에서든 동작합니다.
               </p>
               
