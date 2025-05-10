@@ -18,6 +18,9 @@ export interface Content {
   publishedAt?: string;
   contentType: 'article' | 'video' | 'news';
   rawText?: string;
+  isChildNews?: boolean;
+  educationTags?: string[];
+  relevanceScore?: number;
 }
 
 export interface QuizQuestion {

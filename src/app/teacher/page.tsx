@@ -30,6 +30,22 @@ export default function TeacherPage() {
     setSearchQuery(category.keywords[0]);
   };
 
+  // 선택된 카테고리의 주요 학년 수준 가져오기
+  const getTargetGradeFromCategory = (): string => {
+    if (!selectedCategory) return 'middle'; // 기본값
+
+    // 카테고리의 학년 수준 중에서 가장 낮은 학년 선택 (가장 쉬운 콘텐츠 먼저)
+    if (selectedCategory.gradeLevel.includes('elementary')) {
+      return 'elementary';
+    } else if (selectedCategory.gradeLevel.includes('middle')) {
+      return 'middle';
+    } else if (selectedCategory.gradeLevel.includes('high')) {
+      return 'high';
+    }
+
+    return 'middle'; // 기본값
+  };
+
   // 콘텐츠 검색 핸들러
   const handleSearch = async () => {
     if (!searchQuery.trim()) {
@@ -42,8 +58,12 @@ export default function TeacherPage() {
       setError(null);
       setSearchResults([]); // 이전 검색 결과 초기화
 
-      // API를 통해 콘텐츠 검색
-      const results = await searchContents(searchQuery);
+      // 카테고리 학년 수준에 맞는 검색
+      const targetGrade = getTargetGradeFromCategory();
+      console.log('검색 대상 학년:', targetGrade);
+
+      // API를 통해 콘텐츠 검색 (학년 수준 전달)
+      const results = await searchContents(searchQuery, targetGrade);
 
       if (results.length === 0) {
         setError('검색 결과가 없습니다. 다른 검색어를 시도해보세요.');
@@ -228,12 +248,31 @@ export default function TeacherPage() {
                           />
                         </div>
                       )}
-                      <div>
-                        <h4 className="text-lg font-medium mb-1">{content.title}</h4>
+                      <div className="flex-1">
+                        <div className="flex justify-between items-start">
+                          <h4 className="text-lg font-medium mb-1">{content.title}</h4>
+                          {content.isChildNews && (
+                            <span className="bg-green-100 text-green-700 text-xs px-2 py-1 rounded-full ml-2 flex-shrink-0">
+                              어린이 콘텐츠
+                            </span>
+                          )}
+                        </div>
                         <p className="text-gray-500 text-sm mb-2">
                           출처: {content.source} {content.publishedAt && `• ${new Date(content.publishedAt).toLocaleDateString()}`}
                         </p>
                         <p className="text-gray-700 text-sm mb-2">{content.snippet}</p>
+
+                        {/* 교육 태그 표시 */}
+                        {content.educationTags && content.educationTags.length > 0 && (
+                          <div className="mb-2">
+                            {content.educationTags.map((tag, idx) => (
+                              <span key={idx} className="inline-block bg-blue-50 text-blue-700 text-xs px-2 py-1 rounded mr-2 mb-1">
+                                {tag}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+
                         {content.sourceUrl && (
                           <a
                             href={content.sourceUrl}

@@ -9,20 +9,25 @@ import { Content, QuizQuestion } from '@/types';
  * 통일 교육 관련 콘텐츠 검색
  * - 먼저 네이버 API로 실제 기사 검색 시도
  * - 실패 시 OpenAI로 생성된 가상 콘텐츠 사용
+ * @param query 검색 키워드
+ * @param targetGrade 대상 학년 ('elementary' | 'middle' | 'high')
  */
-export async function searchContents(query: string): Promise<Content[]> {
+export async function searchContents(query: string, targetGrade?: string): Promise<Content[]> {
   try {
     console.log('통일 교육 콘텐츠 검색:', query);
 
     // 단계 1: 네이버 검색 API 사용 (실제 기사)
     try {
-      console.log('네이버 API 검색 시도...');
+      console.log('네이버 API 검색 시도...', '대상 학년:', targetGrade);
       const naverResponse = await fetch('/api/naver-search', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ query }),
+        body: JSON.stringify({
+          query,
+          targetGrade: targetGrade || 'middle' // 기본값: 중학생
+        }),
       });
 
       const naverData = await naverResponse.json();
@@ -39,7 +44,10 @@ export async function searchContents(query: string): Promise<Content[]> {
           sourceUrl: item.sourceUrl,
           imageUrl: item.imageUrl,
           publishedAt: item.publishedAt,
-          contentType: item.sourceUrl.includes('youtube.com') ? 'video' : 'article'
+          contentType: item.sourceUrl.includes('youtube.com') ? 'video' : 'article',
+          isChildNews: item.isChildNews || false,
+          educationTags: item.educationTags || [],
+          relevanceScore: item.relevanceScore || 0
         }));
       }
 

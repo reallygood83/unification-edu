@@ -41,8 +41,9 @@ function getMockData(query: string) {
 
 export async function POST(request: NextRequest) {
   try {
-    const { query } = await request.json();
-    
+    const requestData = await request.json();
+    const { query, targetGrade } = requestData;
+
     // API 키 확인
     if (!NAVER_CLIENT_ID || !NAVER_CLIENT_SECRET) {
       console.error('네이버 API 키가 설정되지 않았습니다.');
@@ -52,19 +53,39 @@ export async function POST(request: NextRequest) {
         data: getMockData(query)
       });
     }
-    
+
     // 환경 정보 로깅
     console.log('네이버 검색 API 요청:', {
       query,
+      targetGrade,
       hasKeys: !!(NAVER_CLIENT_ID && NAVER_CLIENT_SECRET),
       env: process.env.NODE_ENV
     });
-    
+
     try {
-      // 네이버 뉴스 API 호출 - 통일 교육 관련 뉴스 검색
-      const searchQuery = `${query} 통일`;
+      // 학년에 따른 검색 최적화
+      let searchQuery = '';
+      let searchSort = 'sim'; // 기본 정렬: 정확도순
+
+      // 대상 학년에 따른 검색어 최적화
+      if (targetGrade === 'elementary') {
+        // 초등학생용: 어린이 신문 + 쉬운 통일 관련 키워드
+        searchQuery = `(어린이조선일보 OR 어린이동아 OR 어린이경제신문 OR 소년한국일보 OR 주니어조선 OR 어린이신문) ${query} (통일 OR 남북 OR 평화 OR 한반도)`;
+        // 최근 기사 우선
+        searchSort = 'date';
+      } else if (targetGrade === 'high') {
+        // 고등학생용: 심층 분석 키워드 추가
+        searchQuery = `${query} (통일 OR 남북관계 OR 북한 OR 한반도 평화 OR 통일교육) (정책 OR 전략 OR 분석 OR 전망 OR 과제)`;
+      } else {
+        // 중학생용 (기본값): 일반 통일 관련 키워드
+        searchQuery = `${query} (통일 OR 남북관계 OR 북한 OR 한반도 평화 OR 통일교육)`;
+      }
+
+      console.log('최적화된 검색어:', searchQuery, '대상:', targetGrade);
+
+      // 네이버 뉴스 API 호출 - 통일 교육 관련 최적화된 검색어 사용
       const naverResponse = await fetch(
-        `https://openapi.naver.com/v1/search/news.json?query=${encodeURIComponent(searchQuery)}&display=10`,
+        `https://openapi.naver.com/v1/search/news.json?query=${encodeURIComponent(searchQuery)}&display=15&sort=${searchSort}`,
         {
           headers: {
             'X-Naver-Client-Id': NAVER_CLIENT_ID,
@@ -97,28 +118,90 @@ export async function POST(request: NextRequest) {
           .replace(/&amp;/g, '&')
           .replace(/&lt;/g, '<')
           .replace(/&gt;/g, '>');
-        
+
         const cleanDesc = item.description
           .replace(/<[^>]*>/g, '')
           .replace(/&quot;/g, '"')
           .replace(/&amp;/g, '&')
           .replace(/&lt;/g, '<')
           .replace(/&gt;/g, '>');
-        
-        // 출처 추출 (간단한 도메인 추출)
+
+        // 출처 추출 (도메인 또는 언론사명 추출)
         const urlObj = new URL(item.link);
-        const source = urlObj.hostname.replace('www.', '');
-        
+        let source = urlObj.hostname.replace('www.', '');
+
+        // 어린이 신문 여부 확인
+        const isChildNews =
+          item.link.includes('kids.donga.com') ||
+          item.link.includes('kids.chosun.com') ||
+          item.link.includes('kid.chosun.com') ||
+          item.link.includes('kids.hankooki.com') ||
+          cleanTitle.includes('어린이') ||
+          cleanTitle.includes('주니어') ||
+          source.includes('kids') ||
+          source.includes('junior') ||
+          source.includes('child');
+
+        // 어린이 신문인 경우 출처 이름 변경
+        if (isChildNews) {
+          if (source.includes('donga')) source = '어린이동아';
+          else if (source.includes('chosun')) source = '어린이조선';
+          else if (source.includes('hankooki')) source = '소년한국일보';
+          else source = source + ' (어린이신문)';
+        }
+
+        // 통일 교육 관련성 점수 산출 (0-100)
+        const relevanceKeywords = ['통일', '남북', '북한', '한반도', '평화', '통일교육'];
+        let relevanceScore = 0;
+
+        // 제목과 내용에서 키워드 검색
+        const fullText = (cleanTitle + ' ' + cleanDesc).toLowerCase();
+        relevanceKeywords.forEach(keyword => {
+          if (fullText.includes(keyword.toLowerCase())) {
+            relevanceScore += 20; // 키워드당 20점, 최대 100점
+          }
+        });
+
+        // 점수 제한 100점
+        relevanceScore = Math.min(relevanceScore, 100);
+
+        // 어린이 신문은 우선순위 부여 (관련성 점수 보너스)
+        if (isChildNews && targetGrade === 'elementary') {
+          relevanceScore += 50; // 어린이 신문에 보너스 점수
+        }
+
+        // 통일교육 관련성 설명 추가
+        const educationTags = [];
+
+        if (relevanceScore >= 80) {
+          educationTags.push('통일교육 핵심 자료');
+        } else if (relevanceScore >= 50) {
+          educationTags.push('통일교육 관련 자료');
+        }
+
+        if (isChildNews) {
+          educationTags.push('어린이 친화적');
+        }
+
+        // 임시 이미지 아이디 생성 (1-1000 사이)
+        const imageId = Math.floor(Math.random() * 1000) + 1;
+
         return {
           id: `naver-${Date.now()}-${index}`,
           title: cleanTitle,
           snippet: cleanDesc,
           source: source,
           sourceUrl: item.link,
-          imageUrl: `https://picsum.photos/id/${(Math.floor(Math.random() * 1000) + 1)}/200/200`, // 임시 이미지
-          publishedAt: item.pubDate
+          imageUrl: `https://picsum.photos/id/${imageId}/200/200`, // 임시 이미지
+          publishedAt: item.pubDate,
+          isChildNews: isChildNews,
+          relevanceScore: relevanceScore,
+          educationTags: educationTags
         };
       });
+
+      // 관련성 점수 기준으로 정렬 (높은 점수가 먼저 오도록)
+      transformedResults.sort((a, b) => b.relevanceScore - a.relevanceScore);
       
       return NextResponse.json({
         success: true,
