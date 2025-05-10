@@ -239,21 +239,41 @@ function QuizCreator() {
         </div>
       )}
 
-      {/* 아티클 읽기 관련 설명 */}
-      <div className="bg-blue-50 border border-blue-100 rounded-lg p-4 mb-6">
-        <div className="flex items-start">
-          <div className="flex-shrink-0 mt-0.5">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
+      {/* 통일 교육 목표 및 아티클 활용 설명 */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        <div className="bg-blue-50 border border-blue-100 rounded-lg p-4">
+          <div className="flex items-start">
+            <div className="flex-shrink-0 mt-0.5">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <div className="ml-3">
+              <h3 className="text-sm font-medium text-blue-800">아티클 활용 방식</h3>
+              <p className="mt-1 text-sm text-blue-600">
+                AI는 선택한 콘텐츠의 원문을 읽고 요약하여 퀴즈를 생성합니다.
+                원문 URL이 제공된 경우 실제 아티클 내용을 분석하고, 그렇지 않은 경우 콘텐츠 요약 정보를 활용합니다.
+                더 정확한 퀴즈 생성을 위해 원문 기사를 함께 확인해보세요.
+              </p>
+            </div>
           </div>
-          <div className="ml-3">
-            <h3 className="text-sm font-medium text-blue-800">아티클 활용 방식</h3>
-            <p className="mt-1 text-sm text-blue-600">
-              AI는 선택한 콘텐츠의 원문을 읽고 요약하여 퀴즈를 생성합니다.
-              원문 URL이 제공된 경우 실제 아티클 내용을 분석하고, 그렇지 않은 경우 콘텐츠 요약 정보를 활용합니다.
-              더 정확한 퀴즈 생성을 위해 원문 기사를 함께 확인해보세요.
-            </p>
+        </div>
+
+        <div className="bg-green-50 border border-green-100 rounded-lg p-4">
+          <div className="flex items-start">
+            <div className="flex-shrink-0 mt-0.5">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+              </svg>
+            </div>
+            <div className="ml-3">
+              <h3 className="text-sm font-medium text-green-800">통일교육 목표</h3>
+              <p className="mt-1 text-sm text-green-600">
+                이 퀴즈는 단순한 지식 평가를 넘어 학생들이 통일의 필요성과 가치를 이해하도록 설계됩니다.
+                평화, 상호존중, 공동번영의 가치를 중심으로 학생들의 비판적 사고력을 기르고
+                통일에 대한 긍정적 인식을 형성하는 것을 목표로 합니다.
+              </p>
+            </div>
           </div>
         </div>
       </div>
@@ -286,20 +306,42 @@ function QuizCreator() {
           </div>
 
           <div>
-            <label className="block text-gray-700 mb-2">난이도</label>
-            <div className="flex flex-wrap gap-3">
-              {difficultyLevels.map((level) => (
-                <label key={level.id} className="flex items-center">
-                  <input
-                    type="radio"
-                    checked={difficulty === level.id}
-                    onChange={() => setDifficulty(level.id as 'easy' | 'medium' | 'hard')}
-                    className="h-4 w-4 text-primary focus:ring-primary border-gray-300"
-                  />
-                  <span className="ml-2 text-gray-700">{level.name}</span>
-                </label>
-              ))}
+            <label className="block text-gray-700 mb-2">난이도 및 학년 수준</label>
+            <div className="flex flex-wrap gap-3 mb-2">
+              {difficultyLevels.map((level) => {
+                // 난이도에 따른 학년 설명
+                const difficultyDescription = {
+                  'easy': '초등학생 수준',
+                  'medium': '중학생 수준',
+                  'hard': '고등학생 수준'
+                }[level.id] || '';
+
+                return (
+                  <label
+                    key={level.id}
+                    className={`flex items-center px-4 py-3 rounded-md border ${
+                      difficulty === level.id
+                        ? 'border-primary bg-primary/5'
+                        : 'border-gray-200 hover:border-primary/30'
+                    } cursor-pointer transition-colors`}
+                  >
+                    <input
+                      type="radio"
+                      checked={difficulty === level.id}
+                      onChange={() => setDifficulty(level.id as 'easy' | 'medium' | 'hard')}
+                      className="h-4 w-4 text-primary focus:ring-primary border-gray-300"
+                    />
+                    <div className="ml-2">
+                      <span className="text-gray-800 font-medium">{level.name}</span>
+                      <p className="text-xs text-gray-500 mt-1">{difficultyDescription}</p>
+                    </div>
+                  </label>
+                );
+              })}
             </div>
+            <p className="text-sm text-gray-500">
+              난이도에 따라 문제의 복잡성과 언어 난이도가 조정됩니다. 대상 학년에 맞는 적절한 난이도를 선택하세요.
+            </p>
           </div>
 
           <div>
