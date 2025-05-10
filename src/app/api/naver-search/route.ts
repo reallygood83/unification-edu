@@ -54,22 +54,29 @@ export async function POST(request: NextRequest) {
     const { query, targetGrade } = requestData;
     
     // API 키 확인
-    if (!NAVER_CLIENT_ID || !NAVER_CLIENT_SECRET || 
-        NAVER_CLIENT_ID === 'your_naver_client_id_here' || 
-        NAVER_CLIENT_SECRET === 'your_naver_client_secret_here') {
-      
-      console.error('네이버 API 키가 설정되지 않았습니다.', {
+    const isValidClientId = NAVER_CLIENT_ID &&
+                          NAVER_CLIENT_ID !== 'your_naver_client_id_here' &&
+                          NAVER_CLIENT_ID.length > 10;
+
+    const isValidClientSecret = NAVER_CLIENT_SECRET &&
+                              NAVER_CLIENT_SECRET !== 'your_naver_client_secret_here' &&
+                              NAVER_CLIENT_SECRET.length > 10;
+
+    if (!isValidClientId || !isValidClientSecret) {
+      console.error('네이버 API 키가 설정되지 않았거나 유효하지 않습니다.', {
         hasClientId: !!NAVER_CLIENT_ID,
         hasClientSecret: !!NAVER_CLIENT_SECRET,
-        clientIdValue: NAVER_CLIENT_ID === 'your_naver_client_id_here' ? '기본값 사용 중' : '커스텀 값 설정됨',
-        clientSecretValue: NAVER_CLIENT_SECRET === 'your_naver_client_secret_here' ? '기본값 사용 중' : '커스텀 값 설정됨'
+        clientIdValid: isValidClientId,
+        clientSecretValid: isValidClientSecret,
+        clientIdLength: NAVER_CLIENT_ID ? NAVER_CLIENT_ID.length : 0,
+        clientSecretLength: NAVER_CLIENT_SECRET ? NAVER_CLIENT_SECRET.length : 0
       });
-      
+
       // 실제 API 키가 없으므로 모의 데이터 반환
       return NextResponse.json({
         success: true, // 클라이언트에 오류 없이 처리한 것처럼 전달
         mockDataUsed: true,
-        message: 'API 키가 설정되지 않아 모의 데이터를 사용합니다. .env.local 파일에 NAVER_CLIENT_ID와 NAVER_CLIENT_SECRET을 올바르게 설정해주세요.',
+        message: `API 키가 설정되지 않아 모의 데이터를 사용합니다. .env.local 파일 또는 Vercel 환경변수에 NAVER_CLIENT_ID와 NAVER_CLIENT_SECRET을 올바르게 설정해주세요. (ID: ${isValidClientId ? '유효함' : '유효하지 않음'}, Secret: ${isValidClientSecret ? '유효함' : '유효하지 않음'})`,
         data: getMockData(query)
       });
     }
@@ -86,19 +93,24 @@ export async function POST(request: NextRequest) {
       // 학년에 따른 검색 최적화
       let searchQuery = '';
       let searchSort = 'sim'; // 기본 정렬: 정확도순
-      
-      // 대상 학년에 따른 검색어 최적화
+
+      console.log('검색 대상 학년 값:', targetGrade, '타입:', typeof targetGrade);
+
+      // 대상 학년에 따른 검색어 최적화 (GradeLevel 타입과 일치하도록)
       if (targetGrade === 'elementary') {
-        // 초등학생용: 어린이 신문 + 쉬운 통일 관련 키워드
-        searchQuery = `(어린이조선일보 OR 어린이동아 OR 어린이경제신문 OR 소년한국일보 OR 주니어조선 OR 어린이신문) ${query} (통일 OR 남북 OR 평화 OR 한반도)`;
+        // 초등학생용: 간단한 통일 키워드 + 어린이 신문사 추가
+        searchQuery = `${query} 통일`;
+        if (query.indexOf('어린이') === -1) {
+          searchQuery += " 어린이";
+        }
         // 최근 기사 우선
         searchSort = 'date';
       } else if (targetGrade === 'high') {
-        // 고등학생용: 심층 분석 키워드 추가
-        searchQuery = `${query} (통일 OR 남북관계 OR 북한 OR 한반도 평화 OR 통일교육) (정책 OR 전략 OR 분석 OR 전망 OR 과제)`;
+        // 고등학생용: 심층 분석 키워드
+        searchQuery = `${query} 통일 교육`;
       } else {
         // 중학생용 (기본값): 일반 통일 관련 키워드
-        searchQuery = `${query} (통일 OR 남북관계 OR 북한 OR 한반도 평화 OR 통일교육)`;
+        searchQuery = `${query} 통일 교육`;
       }
       
       // 디버깅 정보 
@@ -106,9 +118,13 @@ export async function POST(request: NextRequest) {
       console.log('대상 학년:', targetGrade);
       console.log('정렬 방식:', searchSort);
       
+      // 더 단순한 쿼리로 변환 (네이버 API는 복잡한 연산자를 지원하지 않을 수 있음)
+      const simplifiedQuery = searchQuery.replace(/\(|\)|OR|AND/g, ' ').replace(/\s+/g, ' ').trim();
+
       // 네이버 뉴스 API 호출 URL 구성
-      const apiUrl = `https://openapi.naver.com/v1/search/news.json?query=${encodeURIComponent(searchQuery)}&display=15&sort=${searchSort}`;
+      const apiUrl = `https://openapi.naver.com/v1/search/news.json?query=${encodeURIComponent(simplifiedQuery)}&display=15&sort=${searchSort}`;
       console.log('네이버 API 호출 URL:', apiUrl);
+      console.log('단순화된 검색어:', simplifiedQuery);
       
       // 네이버 뉴스 API 호출
       const naverResponse = await fetch(apiUrl, {

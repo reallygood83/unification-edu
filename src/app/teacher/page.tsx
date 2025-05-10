@@ -60,23 +60,35 @@ export default function TeacherPage() {
 
       // 카테고리 학년 수준에 맞는 검색
       const targetGrade = getTargetGradeFromCategory();
-      console.log('검색 대상 학년:', targetGrade);
+      console.log('검색 시작 - 검색어:', searchQuery, '대상 학년:', targetGrade);
 
       // API를 통해 콘텐츠 검색 (학년 수준 전달)
-      const results = await searchContents(searchQuery, targetGrade);
+      try {
+        const results = await searchContents(searchQuery, targetGrade);
+        console.log('검색 결과 수신:', results.length, '개 항목');
 
-      if (results.length === 0) {
-        setError('검색 결과가 없습니다. 다른 검색어를 시도해보세요.');
-      } else {
-        // 검색 결과를 세션 스토리지에 저장 (퀴즈 생성 페이지에서 사용)
-        sessionStorage.setItem('searchResults', JSON.stringify(results));
-        setSearchResults(results);
+        if (results.length === 0) {
+          setError('검색 결과가 없습니다. 다른 검색어를 시도해보세요.');
+        } else {
+          // 검색 결과를 세션 스토리지에 저장 (퀴즈 생성 페이지에서 사용)
+          sessionStorage.setItem('searchResults', JSON.stringify(results));
+          setSearchResults(results);
+
+          // 모의 데이터 사용 여부 확인
+          const usingMockData = results.some(item => item.isMockData);
+          if (usingMockData) {
+            console.log('모의 데이터가 사용되었습니다. 실제 API 키를 설정하면 실제 검색 결과를 볼 수 있습니다.');
+          }
+        }
+      } catch (searchError) {
+        console.error('검색 실행 중 오류:', searchError);
+        setError('검색 처리 중 오류가 발생했습니다. 다시 시도해주세요.');
       }
     } catch (error: any) {
-      console.error('검색 오류:', error);
+      console.error('검색 최상위 오류:', error);
 
       // API 응답에 포함된 오류 메시지가 있으면 표시하고, 없으면 기본 메시지 표시
-      const errorMessage = error.response?.data?.error || error.message;
+      const errorMessage = error.response?.data?.error || error.message || '알 수 없는 오류';
 
       if (errorMessage.includes('API 키') || errorMessage.includes('key')) {
         setError('API 키가 설정되지 않았습니다. 관리자에게 문의하세요.');
@@ -85,6 +97,7 @@ export default function TeacherPage() {
       }
     } finally {
       setIsSearching(false);
+      console.log('검색 작업 완료');
     }
   };
 
