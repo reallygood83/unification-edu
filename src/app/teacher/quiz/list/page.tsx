@@ -177,7 +177,7 @@ export default function QuizListPage() {
                 
                 <div className="mt-4 flex justify-between items-center">
                   <div>
-                    <span className="text-xs text-gray-500">콘텐츠 출처: {quiz.sourceContent.source}</span>
+                    <span className="text-xs text-gray-500">콘텐츠 출처: {quiz.sourceContent?.source || '알 수 없음'}</span>
                   </div>
                   <Link 
                     href={`/teacher/quiz/${quiz.id}`}
