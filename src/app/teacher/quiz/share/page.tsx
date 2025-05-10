@@ -2,9 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { getAllQuizzes } from '@/lib/api-services';
-import { Quiz } from '@/types';
 import Link from 'next/link';
+import { Quiz } from '@/types';
+import { getAllQuizzesSync } from '@/lib/api-services';
 
 export default function ShareQuizPage() {
   const [quizzes, setQuizzes] = useState<Quiz[]>([]);
@@ -18,15 +18,9 @@ export default function ShareQuizPage() {
     const loadQuizzes = () => {
       try {
         // 로컬 스토리지에서 직접 퀴즈 데이터 로드 (API를 거치지 않고)
-        const quizzesJson = localStorage.getItem('savedQuizzes');
-        if (quizzesJson) {
-          const savedQuizzes = JSON.parse(quizzesJson) as Quiz[];
-          console.log('로컬 스토리지에서 로드된 퀴즈:', savedQuizzes.length);
-          setQuizzes(savedQuizzes);
-        } else {
-          console.log('로컬 스토리지에 저장된 퀴즈가 없습니다.');
-          setQuizzes([]);
-        }
+        const savedQuizzes = getAllQuizzesSync();
+        console.log('로컬 스토리지에서 로드된 퀴즈:', savedQuizzes ? savedQuizzes.length : 0);
+        setQuizzes(savedQuizzes || []);
       } catch (error) {
         console.error('퀴즈 로드 오류:', error);
         setQuizzes([]);
@@ -47,19 +41,24 @@ export default function ShareQuizPage() {
       if (selectedQuizData) {
         // 퀴즈 데이터를 JSON으로 변환하고 Base64로 인코딩
         const compressedQuiz = compressQuiz(selectedQuizData);
-
+        
         // 디버깅: 압축된 퀴즈 데이터 확인
         console.log('공유할 퀴즈 정보:', {
           id: compressedQuiz.id,
           title: compressedQuiz.title,
-          questionsCount: compressedQuiz.questions.length,
-          firstQuestion: compressedQuiz.questions[0].question,
+          questionsCount: compressedQuiz.questions?.length || 0,
+          firstQuestion: compressedQuiz.questions?.[0]?.question || 'No question found',
           category: compressedQuiz.category
         });
-
-        const encodedQuiz = btoa(JSON.stringify(compressedQuiz));
-        const shareUrl = `${window.location.origin}/student/shared-quiz?data=${encodedQuiz}`;
-        setShareUrl(shareUrl);
+        
+        try {
+          const encodedQuiz = btoa(JSON.stringify(compressedQuiz));
+          const shareUrl = `${window.location.origin}/student/shared-quiz?data=${encodedQuiz}`;
+          setShareUrl(shareUrl);
+        } catch (error) {
+          console.error('URL 인코딩 오류:', error);
+          alert('퀴즈 데이터 변환 중 오류가 발생했습니다. 더 작은 퀴즈를 선택해 주세요.');
+        }
       }
     } else {
       setShareUrl('');
@@ -68,28 +67,47 @@ export default function ShareQuizPage() {
   
   // 퀴즈 데이터를 압축하는 함수 (불필요한 필드 제거)
   const compressQuiz = (quiz: Quiz) => {
+    // null/undefined 체크 확인
+    if (!quiz) return {} as Quiz;
+    
     // 필수 필드만 포함한 간소화된 퀴즈 객체 생성
     return {
-      id: quiz.id,
-      title: quiz.title,
-      description: quiz.description,
-      questions: quiz.questions.map(q => ({
-        id: q.id,
-        question: q.question,
-        options: q.options,
-        correctAnswerIndex: q.correctAnswerIndex,
-        explanation: q.explanation
-      })),
-      category: quiz.category,
-      difficulty: quiz.difficulty,
-      targetGrade: quiz.targetGrade,
+      id: quiz.id || `quiz-${Date.now()}`,
+      title: quiz.title || '제목 없음',
+      description: quiz.description || '',
+      questions: Array.isArray(quiz.questions) 
+        ? quiz.questions.map(q => ({
+            id: q?.id || `q-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+            question: q?.question || '질문 내용 없음',
+            options: Array.isArray(q?.options) ? [...q.options] : ['옵션 1', '옵션 2', '옵션 3', '옵션 4'],
+            correctAnswerIndex: typeof q?.correctAnswerIndex === 'number' ? q.correctAnswerIndex : 0,
+            explanation: q?.explanation || '설명 없음'
+          }))
+        : [
+            {
+              id: `q-${Date.now()}-0`,
+              question: '샘플 질문입니다.',
+              options: ['옵션 1', '옵션 2', '옵션 3', '옵션 4'],
+              correctAnswerIndex: 0,
+              explanation: '샘플 설명입니다.'
+            }
+          ],
+      category: quiz.category || 'unification_understanding',
+      difficulty: quiz.difficulty || 'medium',
+      targetGrade: Array.isArray(quiz.targetGrade) ? quiz.targetGrade : ['elementary', 'middle', 'high'],
       // sourceContent의 필수 필드만 포함
       sourceContent: quiz.sourceContent ? {
-        id: quiz.sourceContent.id,
-        title: quiz.sourceContent.title,
-        source: quiz.sourceContent.source,
+        id: quiz.sourceContent.id || 'source-1',
+        title: quiz.sourceContent.title || '출처 제목',
+        source: quiz.sourceContent.source || '출처',
         sourceUrl: quiz.sourceContent.sourceUrl || '',
-      } : null
+      } : {
+        id: 'default-source',
+        title: '기본 출처',
+        source: '통일교육원',
+        sourceUrl: 'https://www.unikorea.go.kr/',
+      },
+      createdAt: quiz.createdAt || new Date().toISOString()
     };
   };
   
@@ -126,7 +144,7 @@ export default function ShareQuizPage() {
         </Link>
       </div>
       
-      {quizzes.length === 0 ? (
+      {!quizzes || quizzes.length === 0 ? (
         <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4 mb-6">
           <p className="text-yellow-700">
             공유할 퀴즈가 없습니다. 먼저 퀴즈를 생성해주세요.
@@ -150,7 +168,7 @@ export default function ShareQuizPage() {
               <option value="">-- 퀴즈 선택 --</option>
               {quizzes.map(quiz => (
                 <option key={quiz.id} value={quiz.id}>
-                  {quiz.title} ({quiz.questions.length}문항)
+                  {quiz.title} ({quiz.questions?.length || 0}문항)
                 </option>
               ))}
             </select>
@@ -181,7 +199,7 @@ export default function ShareQuizPage() {
               </div>
               
               <div className="mt-4 flex gap-4">
-                <Link
+                <Link 
                   href={shareUrl}
                   target="_blank"
                   className="text-primary hover:underline inline-flex items-center"
@@ -191,7 +209,7 @@ export default function ShareQuizPage() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                   </svg>
                 </Link>
-
+                
                 <button
                   onClick={() => {
                     // 직접 퀴즈 정보 확인
@@ -200,10 +218,15 @@ export default function ShareQuizPage() {
                       console.log('선택된 퀴즈 원본 데이터:', {
                         id: selectedQuizData.id,
                         title: selectedQuizData.title,
-                        questions: selectedQuizData.questions.map(q => q.question),
+                        questions: selectedQuizData.questions?.map(q => q.question),
                         category: selectedQuizData.category
                       });
-                      alert(`링크에 포함된 퀴즈: "${selectedQuizData.title}"\n문항 수: ${selectedQuizData.questions.length}개\n첫 번째 문제: "${selectedQuizData.questions[0].question.substring(0, 30)}..."`);
+                      
+                      // 안전한 접근
+                      const firstQuestion = selectedQuizData.questions?.[0]?.question || 'No question';
+                      const questionCount = selectedQuizData.questions?.length || 0;
+                      
+                      alert(`링크에 포함된 퀴즈: "${selectedQuizData.title}"\n문항 수: ${questionCount}개\n첫 번째 문제: "${firstQuestion.substring(0, 30)}..."`);
                     }
                   }}
                   className="text-blue-600 hover:underline inline-flex items-center"

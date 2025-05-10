@@ -54,14 +54,29 @@ export const API_KEYS = {
   OPENAI: getApiKey('NEXT_PUBLIC_OPENAI_API_KEY'),
 };
 
+// Supabase 설정
+export const SUPABASE_CONFIG = {
+  URL: getEnv('NEXT_PUBLIC_SUPABASE_URL'),
+  ANON_KEY: getEnv('NEXT_PUBLIC_SUPABASE_ANON_KEY'),
+};
+
 // 환경 변수 유효성 검사 (서버에서만 실행)
 if (typeof window === 'undefined') {
   // 필수 API 키 검사
   if (!API_KEYS.PERPLEXITY) {
     console.warn('⚠️ PERPLEXITY_API_KEY가 설정되지 않았습니다.');
   }
-  
+
   if (!API_KEYS.OPENAI) {
     console.warn('⚠️ NEXT_PUBLIC_OPENAI_API_KEY가 설정되지 않았습니다.');
+  }
+
+  // Supabase 설정 검사
+  if (!SUPABASE_CONFIG.URL) {
+    console.warn('⚠️ NEXT_PUBLIC_SUPABASE_URL이 설정되지 않았습니다.');
+  }
+
+  if (!SUPABASE_CONFIG.ANON_KEY) {
+    console.warn('⚠️ NEXT_PUBLIC_SUPABASE_ANON_KEY가 설정되지 않았습니다.');
   }
 }

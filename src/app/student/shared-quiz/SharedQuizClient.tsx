@@ -19,11 +19,15 @@ export default function SharedQuizClient({ quiz }: SharedQuizClientProps) {
   const [timeSpent, setTimeSpent] = useState<number>(0);
   
   useEffect(() => {
-    setSelectedAnswers(new Array(quiz.questions.length).fill(-1));
-    setQuizStartTime(Date.now());
+    if (quiz && quiz.questions && Array.isArray(quiz.questions)) {
+      setSelectedAnswers(new Array(quiz.questions.length).fill(-1));
+      setQuizStartTime(Date.now());
+    }
   }, [quiz]);
   
-  const currentQuestion = quiz?.questions[currentQuestionIndex];
+  const currentQuestion = quiz?.questions && currentQuestionIndex >= 0 && currentQuestionIndex < quiz.questions.length
+    ? quiz.questions[currentQuestionIndex]
+    : null;
   
   const handleSelectAnswer = (answerIndex: number) => {
     if (quizCompleted) return;
@@ -34,7 +38,8 @@ export default function SharedQuizClient({ quiz }: SharedQuizClientProps) {
   };
   
   const handleNextQuestion = () => {
-    if (currentQuestionIndex < (quiz?.questions.length || 0) - 1) {
+    if (quiz?.questions && Array.isArray(quiz.questions) &&
+        currentQuestionIndex < quiz.questions.length - 1) {
       setCurrentQuestionIndex(currentQuestionIndex + 1);
     }
   };
@@ -46,24 +51,24 @@ export default function SharedQuizClient({ quiz }: SharedQuizClientProps) {
   };
   
   const handleSubmitQuiz = () => {
-    if (!quiz) return;
-    
+    if (!quiz || !quiz.questions || !Array.isArray(quiz.questions) || quiz.questions.length === 0) return;
+
     const unansweredQuestions = selectedAnswers.filter(answer => answer === -1).length;
     if (unansweredQuestions > 0) {
       if (!window.confirm(`아직 ${unansweredQuestions}개의 문제를 풀지 않았습니다. 정말 제출하시겠습니까?`)) {
         return;
       }
     }
-    
+
     let correctAnswers = 0;
     quiz.questions.forEach((question, index) => {
-      if (selectedAnswers[index] === question.correctAnswerIndex) {
+      if (question && selectedAnswers[index] === question.correctAnswerIndex) {
         correctAnswers++;
       }
     });
-    
+
     const totalQuestions = quiz.questions.length;
-    const calculatedScore = Math.round((correctAnswers / totalQuestions) * 100);
+    const calculatedScore = totalQuestions > 0 ? Math.round((correctAnswers / totalQuestions) * 100) : 0;
     const endTime = Date.now();
     const calculatedTimeSpent = Math.floor((endTime - quizStartTime) / 1000);
     
@@ -190,21 +195,22 @@ export default function SharedQuizClient({ quiz }: SharedQuizClientProps) {
             
             <div className="flex justify-center mb-8">
               <div className="w-32 h-32 rounded-full flex items-center justify-center bg-blue-50 border-4 border-blue-500">
-                <span className="text-3xl font-bold text-blue-700">{score}%</span>
+                <span className="text-3xl font-bold text-blue-700">{score || 0}%</span>
               </div>
             </div>
             
             <div className="grid grid-cols-2 gap-4 mb-8">
               <div className="bg-gray-50 p-4 rounded-md">
                 <p className="text-gray-700 text-sm">문항 수</p>
-                <p className="text-xl font-semibold">{quiz.questions.length}개</p>
+                <p className="text-xl font-semibold">{quiz?.questions?.length || 0}개</p>
               </div>
               <div className="bg-gray-50 p-4 rounded-md">
                 <p className="text-gray-700 text-sm">정답 수</p>
                 <p className="text-xl font-semibold">
-                  {selectedAnswers.filter((answer, index) => 
-                    answer === quiz.questions[index].correctAnswerIndex
-                  ).length}개
+                  {quiz?.questions ?
+                    selectedAnswers.filter((answer, index) =>
+                      quiz.questions[index] && answer === quiz.questions[index].correctAnswerIndex
+                    ).length : 0}개
                 </p>
               </div>
               <div className="bg-gray-50 p-4 rounded-md">
@@ -240,9 +246,9 @@ export default function SharedQuizClient({ quiz }: SharedQuizClientProps) {
         <div className="max-w-2xl mx-auto mt-8">
           <h2 className="text-xl font-bold mb-4">문제 리뷰</h2>
           <div className="space-y-6">
-            {quiz.questions.map((question, index) => (
-              <div 
-                key={question.id} 
+            {quiz?.questions?.map((question, index) => question && (
+              <div
+                key={question.id}
                 className={`p-4 rounded-md border ${
                   selectedAnswers[index] === question.correctAnswerIndex
                     ? 'border-green-200 bg-green-50'
@@ -253,8 +259,8 @@ export default function SharedQuizClient({ quiz }: SharedQuizClientProps) {
                   {index + 1}. {question.question}
                 </p>
                 <div className="space-y-2 mb-3">
-                  {question.options.map((option, optionIndex) => (
-                    <div 
+                  {question.options?.map((option, optionIndex) => (
+                    <div
                       key={optionIndex}
                       className={`p-2 rounded border ${
                         optionIndex === question.correctAnswerIndex
@@ -281,7 +287,7 @@ export default function SharedQuizClient({ quiz }: SharedQuizClientProps) {
                 </div>
                 <div className="mt-2 text-sm bg-gray-100 p-2 rounded">
                   <p className="font-medium">정답 설명:</p>
-                  <p>{question.explanation}</p>
+                  <p>{question.explanation || ''}</p>
                 </div>
               </div>
             ))}
@@ -324,13 +330,13 @@ export default function SharedQuizClient({ quiz }: SharedQuizClientProps) {
         <div className="p-6">
           <div className="mb-6">
             <div className="flex justify-between mb-2 text-sm">
-              <span>문제 {currentQuestionIndex + 1} / {quiz.questions.length}</span>
-              <span>{Math.round(((currentQuestionIndex + 1) / quiz.questions.length) * 100)}% 완료</span>
+              <span>문제 {currentQuestionIndex + 1} / {quiz?.questions?.length || 0}</span>
+              <span>{Math.round(((currentQuestionIndex + 1) / (quiz?.questions?.length || 1)) * 100)}% 완료</span>
             </div>
             <div className="w-full bg-gray-200 rounded-full h-2.5">
-              <div 
-                className="bg-primary h-2.5 rounded-full" 
-                style={{ width: `${((currentQuestionIndex + 1) / quiz.questions.length) * 100}%` }}
+              <div
+                className="bg-primary h-2.5 rounded-full"
+                style={{ width: `${((currentQuestionIndex + 1) / (quiz?.questions?.length || 1)) * 100}%` }}
               ></div>
             </div>
           </div>
@@ -342,7 +348,7 @@ export default function SharedQuizClient({ quiz }: SharedQuizClientProps) {
               </h2>
               
               <div className="space-y-3">
-                {currentQuestion.options.map((option, optionIndex) => (
+                {currentQuestion.options?.map((option, optionIndex) => (
                   <div 
                     key={optionIndex}
                     onClick={() => handleSelectAnswer(optionIndex)}
@@ -377,7 +383,7 @@ export default function SharedQuizClient({ quiz }: SharedQuizClientProps) {
               이전 문제
             </button>
             
-            {currentQuestionIndex < quiz.questions.length - 1 ? (
+            {quiz?.questions && Array.isArray(quiz.questions) && currentQuestionIndex < quiz.questions.length - 1 ? (
               <button
                 onClick={handleNextQuestion}
                 className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90 transition-colors"

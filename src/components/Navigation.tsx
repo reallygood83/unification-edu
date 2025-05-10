@@ -36,54 +36,69 @@ export default function Navigation() {
 
           {/* 데스크톱 네비게이션 */}
           <div className="hidden md:flex items-center space-x-8">
-            <Link 
-              href="/" 
+            <Link
+              href="/"
               className={`text-gray-600 hover:text-primary ${pathname === '/' ? 'font-semibold' : ''}`}
             >
               홈
             </Link>
-            <Link 
-              href="/teacher" 
+            <Link
+              href="/teacher"
               className={`text-gray-600 hover:text-primary ${pathname?.includes('/teacher') ? 'font-semibold' : ''}`}
             >
               교사용
             </Link>
-            <Link 
-              href="/student" 
+            <Link
+              href="/student"
               className={`text-gray-600 hover:text-primary ${pathname?.includes('/student') ? 'font-semibold' : ''}`}
             >
               학생용
             </Link>
-            
+
             {/* 사용자 역할에 따라 추가 메뉴 표시 */}
             {userRole === 'teacher' && (
               <>
-                <Link 
-                  href="/teacher/quiz/list" 
+                <Link
+                  href="/teacher/quiz/list"
                   className={`text-gray-600 hover:text-primary ${pathname?.includes('/teacher/quiz/list') ? 'font-semibold' : ''}`}
                 >
                   내 퀴즈 목록
                 </Link>
               </>
             )}
-            
+
             {userRole === 'student' && (
               <>
-                <Link 
-                  href="/student/history" 
+                <Link
+                  href="/student/history"
                   className={`text-gray-600 hover:text-primary ${pathname?.includes('/student/history') ? 'font-semibold' : ''}`}
                 >
                   학습 기록
                 </Link>
                 {/* 인증서 링크는 실제로는 조건부로 보여야 함 */}
-                <Link 
-                  href="/student/certificate" 
+                <Link
+                  href="/student/certificate"
                   className={`text-gray-600 hover:text-primary ${pathname?.includes('/student/certificate') ? 'font-semibold' : ''}`}
                 >
                   인증서
                 </Link>
               </>
             )}
+
+            {/* 관리자 도구 */}
+            <div className="relative group">
+              <button className="text-gray-600 hover:text-primary focus:outline-none">
+                도구 ▾
+              </button>
+              <div className="absolute z-10 hidden group-hover:block bg-white border rounded-md shadow-lg py-2 w-48 right-0">
+                <Link
+                  href="/tools/supabase-diagnostics"
+                  className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                >
+                  Supabase 진단
+                </Link>
+              </div>
+            </div>
           </div>
 
           {/* 모바일 메뉴 토글 버튼 */}
@@ -160,6 +175,15 @@ export default function Navigation() {
                 </Link>
               </>
             )}
+
+            {/* 도구 메뉴 */}
+            <Link
+              href="/tools/supabase-diagnostics"
+              className={`px-3 py-2 rounded-md ${pathname?.includes('/tools/supabase-diagnostics') ? 'bg-primary/10 text-primary' : 'text-gray-600 hover:bg-gray-50'}`}
+              onClick={() => setIsMenuOpen(false)}
+            >
+              Supabase 진단
+            </Link>
           </div>
         </div>
       </div>

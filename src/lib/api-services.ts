@@ -280,7 +280,7 @@ export async function generateQuiz(
 }
 
 /**
- * 새 퀴즈 저장 (임시로 로컬 스토리지만 사용)
+ * 새 퀴즈 저장 (Supabase와 로컬 스토리지 모두 사용)
  */
 export async function saveQuiz(quiz: Quiz): Promise<boolean> {
   try {
@@ -297,37 +297,44 @@ export async function saveQuiz(quiz: Quiz): Promise<boolean> {
       quiz.id = generateUUID();
     }
 
-    // 로컬 스토리지에만 저장 (임시 모드)
-    console.log('** 임시 모드: 현재 로컬 스토리지에만 퀴즈 저장 중 **');
-    console.log('퀴즈 저장 중:', quiz.title);
+    console.log('퀴즈 저장 시작:', quiz.title);
 
-    // 기존 퀴즈 목록 가져오기
-    const savedQuizzes = JSON.parse(localStorage.getItem('savedQuizzes') || '[]') as Quiz[];
+    try {
+      // Supabase DB에 저장 시도
+      const { saveQuizToDB } = await import('./supabase-api');
+      const savedId = await saveQuizToDB(quiz);
 
-    // 새 퀴즈 추가
-    savedQuizzes.push(quiz);
+      if (savedId) {
+        console.log('퀴즈가 Supabase에 성공적으로 저장됨, ID:', savedId);
+      } else {
+        console.warn('Supabase 저장 실패, 로컬 스토리지만 사용');
+      }
 
-    // localStorage에 저장
-    localStorage.setItem('savedQuizzes', JSON.stringify(savedQuizzes));
+      // 로컬 스토리지에도 항상 저장 (백업)
+      const savedQuizzes = JSON.parse(localStorage.getItem('savedQuizzes') || '[]') as Quiz[];
+      savedQuizzes.push(quiz);
+      localStorage.setItem('savedQuizzes', JSON.stringify(savedQuizzes));
 
-    // 쿠키에도 저장 (서버 사이드에서 접근 가능하도록)
-    if (typeof document !== 'undefined') {
-      document.cookie = `savedQuizzes=${encodeURIComponent(JSON.stringify(savedQuizzes))}; path=/; max-age=86400`;
+      // 쿠키에도 저장 (서버 사이드에서 접근 가능하도록)
+      if (typeof document !== 'undefined') {
+        document.cookie = `savedQuizzes=${encodeURIComponent(JSON.stringify(savedQuizzes))}; path=/; max-age=86400`;
+      }
+
+      return true;
+    } catch (dbError) {
+      console.error('DB 저장 오류, 로컬 스토리지만 사용:', dbError);
+
+      // 로컬 스토리지에만 저장
+      const savedQuizzes = JSON.parse(localStorage.getItem('savedQuizzes') || '[]') as Quiz[];
+      savedQuizzes.push(quiz);
+      localStorage.setItem('savedQuizzes', JSON.stringify(savedQuizzes));
+
+      if (typeof document !== 'undefined') {
+        document.cookie = `savedQuizzes=${encodeURIComponent(JSON.stringify(savedQuizzes))}; path=/; max-age=86400`;
+      }
+
+      return true; // 로컬 저장이 성공했으므로 true 반환
     }
-
-    console.log('퀴즈 저장 완료, ID:', quiz.id);
-    return true;
-
-    /* 비활성화된 Supabase 코드 - 테이블 스키마 준비 후 다시 활성화
-    // 비동기 임포트로 순환 참조 방지
-    const { saveQuizToDB } = await import('./supabase-api');
-
-    // DB에 저장 시도
-    const savedId = await saveQuizToDB(quiz);
-
-    // DB 저장에 실패한 경우에도 로컬 저장 결과 반환 (대체 방법)
-    return !!savedId;
-    */
   } catch (error) {
     console.error('퀴즈 저장 오류:', error);
     return false;
@@ -335,27 +342,32 @@ export async function saveQuiz(quiz: Quiz): Promise<boolean> {
 }
 
 /**
- * 저장된 모든 퀴즈 가져오기 (임시로 로컬 스토리지만 사용)
+ * 저장된 모든 퀴즈 가져오기 (Supabase와 로컬 스토리지 모두 사용)
  */
 export async function getAllQuizzes(): Promise<Quiz[]> {
   try {
-    // 임시 모드: 로컬 스토리지에서만 퀴즈 가져오기
-    console.log('** 임시 모드: 로컬 스토리지에서만 퀴즈 가져오기 **');
+    console.log('퀴즈 목록 가져오기 시작');
 
-    // 로컬 스토리지에서 퀴즈 읽기
+    try {
+      // Supabase DB에서 퀴즈 가져오기 시도
+      const { getAllQuizzesFromDB } = await import('./supabase-api');
+      const dbQuizzes = await getAllQuizzesFromDB();
+
+      if (dbQuizzes && dbQuizzes.length > 0) {
+        console.log(`Supabase DB에서 ${dbQuizzes.length}개의 퀴즈를 불러왔습니다`);
+        return dbQuizzes;
+      } else {
+        console.log('Supabase DB에서 퀴즈를 찾지 못함, 로컬 스토리지 확인');
+      }
+    } catch (dbError) {
+      console.error('DB 퀴즈 가져오기 오류:', dbError);
+    }
+
+    // DB에서 가져오지 못한 경우 로컬 스토리지에서 가져오기
     const savedQuizzes = JSON.parse(localStorage.getItem('savedQuizzes') || '[]') as Quiz[];
     console.log(`로컬 스토리지에서 ${savedQuizzes.length}개의 퀴즈를 불러왔습니다`);
 
     return savedQuizzes;
-
-    /* 비활성화된 Supabase 코드 - 테이블 스키마 준비 후 다시 활성화
-    // 비동기 임포트로 순환 참조 방지
-    const { getAllQuizzesFromDB } = await import('./supabase-api');
-
-    // DB에서 퀴즈 가져오기 시도
-    const quizzes = await getAllQuizzesFromDB();
-    return quizzes;
-    */
   } catch (error) {
     console.error('퀴즈 목록 가져오기 오류:', error);
     // 에러 발생 시 빈 배열 반환
