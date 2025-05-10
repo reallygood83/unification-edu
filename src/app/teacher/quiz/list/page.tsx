@@ -167,7 +167,7 @@ export default function QuizListPage() {
                     대상: {getGradeNames(quiz.targetGrade)}
                   </span>
                   <span className="px-2 py-1 bg-gray-50 text-gray-700 text-xs rounded-md">
-                    문항 수: {quiz.questions.length}개
+                    문항 수: {Array.isArray(quiz.questions) ? quiz.questions.length : 0}개
                   </span>
                 </div>
                 

@@ -53,7 +53,7 @@ export async function saveQuizToDB(quiz: Quiz): Promise<string | null> {
 
     // Supabase에 퀴즈 저장
     const { data, error } = await supabase
-      .from('quizzes_new')
+      .from('quizzes')
       .insert([dbQuiz])
       .select('id')
       .single();
@@ -120,7 +120,7 @@ export async function getAllQuizzesFromDB(): Promise<Quiz[]> {
 
     // Supabase에서 모든 퀴즈 조회
     const { data, error } = await supabase
-      .from('quizzes_new')
+      .from('quizzes')
       .select('*')
       .order('created_at', { ascending: false });
 
@@ -217,7 +217,7 @@ export async function getQuizByIdFromDB(id: string): Promise<Quiz | null> {
 
     // Supabase에서 ID로 퀴즈 조회
     const { data, error } = await supabase
-      .from('quizzes_new')
+      .from('quizzes')
       .select('*')
       .eq('id', id)
       .single();
@@ -323,7 +323,7 @@ export async function saveStudentProgressToDB(progress: StudentProgress): Promis
 
     // 기존 데이터 있는지 확인
     const { data: existingData } = await supabase
-      .from('student_progress_new')
+      .from('student_progress')
       .select('id')
       .eq('user_id', progress.userId)
       .maybeSingle();
@@ -333,13 +333,13 @@ export async function saveStudentProgressToDB(progress: StudentProgress): Promis
     if (existingData) {
       // 업데이트
       result = await supabase
-        .from('student_progress_new')
+        .from('student_progress')
         .update(dbProgress)
         .eq('id', existingData.id);
     } else {
       // 새로 생성
       result = await supabase
-        .from('student_progress_new')
+        .from('student_progress')
         .insert([dbProgress]);
     }
 
@@ -392,7 +392,7 @@ export async function getStudentProgressFromDB(userId: string): Promise<StudentP
 
     // Supabase에서 학생 진행 상황 조회
     const { data, error } = await supabase
-      .from('student_progress_new')
+      .from('student_progress')
       .select('*')
       .eq('user_id', userId)
       .maybeSingle();
