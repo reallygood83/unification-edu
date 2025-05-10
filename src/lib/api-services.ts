@@ -280,51 +280,111 @@ export async function generateQuiz(
 }
 
 /**
- * 새 퀴즈 저장 (localStorage와 쿠키 모두 사용)
- * localStorage는 클라이언트측 접근용, 쿠키는 서버측 접근용
+ * 새 퀴즈 저장 (Supabase DB와 localStorage 모두 사용)
  */
-export function saveQuiz(quiz: Quiz): boolean {
+export async function saveQuiz(quiz: Quiz): Promise<boolean> {
   try {
-    // 기존 퀴즈 목록 가져오기
-    const savedQuizzes = JSON.parse(localStorage.getItem('savedQuizzes') || '[]') as Quiz[];
+    // 비동기 임포트로 순환 참조 방지
+    const { saveQuizToDB } = await import('./supabase-api');
 
-    // 새 퀴즈 추가
-    savedQuizzes.push(quiz);
+    // DB에 저장 시도
+    const savedId = await saveQuizToDB(quiz);
 
-    // localStorage에 저장
-    localStorage.setItem('savedQuizzes', JSON.stringify(savedQuizzes));
-
-    // 쿠키에도 저장 (서버 사이드에서 접근 가능하도록)
-    document.cookie = `savedQuizzes=${encodeURIComponent(JSON.stringify(savedQuizzes))}; path=/; max-age=86400`;
-
-    return true;
+    // DB 저장에 실패한 경우에도 로컬 저장 결과 반환 (대체 방법)
+    return !!savedId;
   } catch (error) {
     console.error('퀴즈 저장 오류:', error);
-    return false;
+    // 에러가 발생하면 localStorage만 사용
+    try {
+      // 기존 퀴즈 목록 가져오기
+      const savedQuizzes = JSON.parse(localStorage.getItem('savedQuizzes') || '[]') as Quiz[];
+
+      // 새 퀴즈 추가
+      savedQuizzes.push(quiz);
+
+      // localStorage에 저장
+      localStorage.setItem('savedQuizzes', JSON.stringify(savedQuizzes));
+
+      // 쿠키에도 저장 (서버 사이드에서 접근 가능하도록)
+      document.cookie = `savedQuizzes=${encodeURIComponent(JSON.stringify(savedQuizzes))}; path=/; max-age=86400`;
+
+      return true;
+    } catch (localError) {
+      console.error('로컬 저장 오류:', localError);
+      return false;
+    }
   }
 }
 
 /**
  * 저장된 모든 퀴즈 가져오기
  */
-export function getAllQuizzes(): Quiz[] {
+export async function getAllQuizzes(): Promise<Quiz[]> {
+  try {
+    // 비동기 임포트로 순환 참조 방지
+    const { getAllQuizzesFromDB } = await import('./supabase-api');
+
+    // DB에서 퀴즈 가져오기 시도
+    const quizzes = await getAllQuizzesFromDB();
+    return quizzes;
+  } catch (error) {
+    console.error('DB 퀴즈 목록 가져오기 오류:', error);
+    // 에러 발생 시 로컬 스토리지에서 가져오기
+    try {
+      return JSON.parse(localStorage.getItem('savedQuizzes') || '[]') as Quiz[];
+    } catch (localError) {
+      console.error('로컬 스토리지 퀴즈 목록 가져오기 오류:', localError);
+      return [];
+    }
+  }
+}
+
+/**
+ * 동기식으로 로컬 스토리지에서만 퀴즈 가져오기
+ * (이전 코드와의 호환성 유지)
+ */
+export function getAllQuizzesSync(): Quiz[] {
   try {
     return JSON.parse(localStorage.getItem('savedQuizzes') || '[]') as Quiz[];
   } catch (error) {
-    console.error('퀴즈 목록 가져오기 오류:', error);
+    console.error('로컬 스토리지 퀴즈 목록 가져오기 오류:', error);
     return [];
   }
 }
 
 /**
- * ID로 특정 퀴즈 가져오기
+ * ID로 특정 퀴즈 가져오기 (비동기)
  */
-export function getQuizById(id: string): Quiz | null {
+export async function getQuizById(id: string): Promise<Quiz | null> {
   try {
-    const quizzes = getAllQuizzes();
+    // 비동기 임포트로 순환 참조 방지
+    const { getQuizByIdFromDB } = await import('./supabase-api');
+
+    // DB에서 퀴즈 가져오기 시도
+    const quiz = await getQuizByIdFromDB(id);
+    return quiz;
+  } catch (error) {
+    console.error(`ID ${id}로 DB 퀴즈 가져오기 오류:`, error);
+    // 에러 발생 시 로컬 스토리지에서 가져오기
+    try {
+      const quizzes = getAllQuizzesSync();
+      return quizzes.find(quiz => quiz.id === id) || null;
+    } catch (localError) {
+      console.error(`ID ${id}로 로컬 스토리지 퀴즈 가져오기 오류:`, localError);
+      return null;
+    }
+  }
+}
+
+/**
+ * ID로 특정 퀴즈 가져오기 (동기식, 이전 코드와의 호환성 유지)
+ */
+export function getQuizByIdSync(id: string): Quiz | null {
+  try {
+    const quizzes = getAllQuizzesSync();
     return quizzes.find(quiz => quiz.id === id) || null;
   } catch (error) {
-    console.error('퀴즈 가져오기 오류:', error);
+    console.error('로컬 스토리지 퀴즈 가져오기 오류:', error);
     return null;
   }
 }
