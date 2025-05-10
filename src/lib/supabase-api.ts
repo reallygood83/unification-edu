@@ -1,5 +1,5 @@
 import { Quiz, QuizAttempt, StudentProgress } from '@/types';
-import { supabase } from './supabase';
+import { getSupabase } from './supabase';
 
 /**
  * DB에 새 퀴즈 저장
@@ -19,6 +19,13 @@ export async function saveQuizToDB(quiz: Quiz): Promise<string | null> {
       target_grade: quiz.targetGrade
     };
     
+    // Supabase 클라이언트 가져오기
+    const supabase = await getSupabase();
+    if (!supabase) {
+      console.error('Supabase 클라이언트를 초기화할 수 없습니다.');
+      return null;
+    }
+
     // Supabase에 퀴즈 저장
     const { data, error } = await supabase
       .from('quizzes')
@@ -74,6 +81,13 @@ function saveQuizToLocalStorage(quiz: Quiz): boolean {
  */
 export async function getAllQuizzesFromDB(): Promise<Quiz[]> {
   try {
+    // Supabase 클라이언트 가져오기
+    const supabase = await getSupabase();
+    if (!supabase) {
+      console.error('Supabase 클라이언트를 초기화할 수 없습니다.');
+      return getAllQuizzesFromLocalStorage();
+    }
+
     // Supabase에서 모든 퀴즈 조회
     const { data, error } = await supabase
       .from('quizzes')
@@ -135,6 +149,13 @@ function getAllQuizzesFromLocalStorage(): Quiz[] {
  */
 export async function getQuizByIdFromDB(id: string): Promise<Quiz | null> {
   try {
+    // Supabase 클라이언트 가져오기
+    const supabase = await getSupabase();
+    if (!supabase) {
+      console.error('Supabase 클라이언트를 초기화할 수 없습니다.');
+      return getQuizByIdFromLocalStorage(id);
+    }
+
     // Supabase에서 ID로 퀴즈 조회
     const { data, error } = await supabase
       .from('quizzes')
@@ -208,15 +229,23 @@ export async function saveStudentProgressToDB(progress: StudentProgress): Promis
       quiz_attempts: progress.quizAttempts
     };
     
+    // Supabase 클라이언트 가져오기
+    const supabase = await getSupabase();
+    if (!supabase) {
+      console.error('Supabase 클라이언트를 초기화할 수 없습니다.');
+      saveStudentProgressToLocalStorage(progress);
+      return false;
+    }
+
     // 기존 데이터 있는지 확인
     const { data: existingData } = await supabase
       .from('student_progress')
       .select('id')
       .eq('user_id', progress.userId)
       .maybeSingle();
-    
+
     let result;
-    
+
     if (existingData) {
       // 업데이트
       result = await supabase
@@ -270,6 +299,13 @@ function saveStudentProgressToLocalStorage(progress: StudentProgress): boolean {
  */
 export async function getStudentProgressFromDB(userId: string): Promise<StudentProgress | null> {
   try {
+    // Supabase 클라이언트 가져오기
+    const supabase = await getSupabase();
+    if (!supabase) {
+      console.error('Supabase 클라이언트를 초기화할 수 없습니다.');
+      return getStudentProgressFromLocalStorage();
+    }
+
     // Supabase에서 학생 진행 상황 조회
     const { data, error } = await supabase
       .from('student_progress')
