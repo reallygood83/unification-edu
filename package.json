@@ -2,6 +2,7 @@
   "name": "unification-quiz-app",
   "version": "1.0.0",
   "description": "통일교육 퀴즈 웹 애플리케이션",
+  "packageManager": "npm@10.2.4",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -29,7 +30,8 @@
     "openai": "^4.98.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
-    "typescript": "^5.8.3"
+    "typescript": "^5.8.3",
+    "@supabase/supabase-js": "^2.49.4"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.1.5",

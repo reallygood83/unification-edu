@@ -53,45 +53,80 @@ const mockSupabaseClient: SupabaseClient = {
   }),
 };
 
+// 이미 생성된 Supabase 클라이언트 인스턴스를 저장하기 위한 전역 변수
+let supabaseClientInstance: any = null;
+
 // Supabase 클라이언트 또는 모의 클라이언트 반환
 export async function getSupabase(): Promise<SupabaseClient> {
   console.log('Supabase 클라이언트 요청됨');
 
+  // 이미 생성된 인스턴스가 있으면 재사용
+  if (supabaseClientInstance) {
+    return supabaseClientInstance;
+  }
+
   try {
     // 실제 Supabase 연결을 시도
-    if (supabaseUrl && supabaseAnonKey && typeof window !== 'undefined') {
+    if (supabaseUrl && supabaseAnonKey) {
       try {
-        // 동적 임포트 시도 - 더 강력한 오류 처리 추가
-        const SupabaseModule = await Promise.resolve().then(() => import('@supabase/supabase-js')).catch(err => {
-          console.warn('Supabase 모듈 임포트 실패, 모의 클라이언트 사용:', err.message);
-          return null;
-        });
+        // 정적 임포트 대신 필요한 함수만 직접 임포트 시도
+        let createClient;
 
-        // 모듈 로드에 실패한 경우
-        if (!SupabaseModule) {
-          console.warn('Supabase 모듈을 찾을 수 없음, 모의 클라이언트 사용');
+        // Next.js 서버 환경과 클라이언트 환경 모두 지원
+        try {
+          // CommonJS 방식 시도
+          const SupabaseModule = require('@supabase/supabase-js');
+          createClient = SupabaseModule.createClient;
+          console.log('CommonJS를 통해 Supabase 모듈 로드 성공');
+        } catch (commonjsError) {
+          try {
+            // ESM 방식 시도 (동적 임포트)
+            console.log('ESM 방식으로 Supabase 모듈 임포트 시도');
+            const SupabaseModule = await import('@supabase/supabase-js');
+            createClient = SupabaseModule.createClient;
+            console.log('ESM을 통해 Supabase 모듈 로드 성공');
+          } catch (esmError) {
+            console.warn('모든 Supabase 모듈 임포트 방식 실패, 모의 클라이언트 사용');
+            supabaseClientInstance = mockSupabaseClient;
+            return mockSupabaseClient;
+          }
+        }
+
+        if (!createClient) {
+          console.warn('createClient 함수를 찾을 수 없음, 모의 클라이언트 사용');
+          supabaseClientInstance = mockSupabaseClient;
           return mockSupabaseClient;
         }
 
         try {
           // 클라이언트 생성을 별도의 try-catch로 분리
-          const client = SupabaseModule.createClient(supabaseUrl, supabaseAnonKey);
+          const client = createClient(supabaseUrl, supabaseAnonKey, {
+            auth: {
+              autoRefreshToken: false,
+              persistSession: false
+            }
+          });
           console.log('실제 Supabase 클라이언트 생성 성공');
-          return client as unknown as SupabaseClient;
+          supabaseClientInstance = client as unknown as SupabaseClient;
+          return supabaseClientInstance;
         } catch (clientError) {
           console.error('Supabase 클라이언트 생성 실패:', clientError);
+          supabaseClientInstance = mockSupabaseClient;
           return mockSupabaseClient;
         }
       } catch (importError) {
         console.warn('Supabase 모듈 임포트 예상치 못한 오류, 모의 클라이언트 사용:', importError);
+        supabaseClientInstance = mockSupabaseClient;
         return mockSupabaseClient;
       }
     }
 
     console.warn('Supabase 설정 정보 없음, 모의 클라이언트 사용');
+    supabaseClientInstance = mockSupabaseClient;
     return mockSupabaseClient;
   } catch (error) {
     console.error('Supabase 초기화 오류:', error);
+    supabaseClientInstance = mockSupabaseClient;
     return mockSupabaseClient;
   }
 }
