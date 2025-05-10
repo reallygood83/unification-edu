@@ -35,6 +35,13 @@ export async function searchContents(query: string, targetGrade?: string): Promi
       if (naverData.success && naverData.data?.results?.length > 0) {
         console.log('네이버 검색 결과 사용:', naverData.data.results.length);
 
+        // 모의 데이터 사용 여부 로깅
+        if (naverData.mockDataUsed) {
+          console.log('모의 데이터 사용 중:', naverData.message || '네이버 API 사용 불가');
+        } else {
+          console.log('실제 네이버 API 데이터 사용 중');
+        }
+
         // 데이터 구조화 및 변환
         return naverData.data.results.map(item => ({
           id: item.id,
@@ -47,7 +54,8 @@ export async function searchContents(query: string, targetGrade?: string): Promi
           contentType: item.sourceUrl.includes('youtube.com') ? 'video' : 'article',
           isChildNews: item.isChildNews || false,
           educationTags: item.educationTags || [],
-          relevanceScore: item.relevanceScore || 0
+          relevanceScore: item.relevanceScore || 0,
+          isMockData: naverData.mockDataUsed || false
         }));
       }
 

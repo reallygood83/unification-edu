@@ -13,27 +13,36 @@ function getMockData(query: string) {
         title: `한반도 평화와 통일에 대한 이해: ${query}`,
         snippet: "한반도 평화와 통일 과정에서 고려해야 할 다양한 관점과 이슈들에 대한 종합적인 분석...",
         source: "통일부",
-        sourceUrl: "https://example.com/unification-1",
+        sourceUrl: "https://www.unikorea.go.kr/",
         imageUrl: "https://picsum.photos/id/237/200/200",
-        publishedAt: "2023-04-15T09:00:00Z"
+        publishedAt: "2023-04-15T09:00:00Z",
+        isChildNews: false,
+        relevanceScore: 90,
+        educationTags: ["통일교육 핵심 자료"]
       },
       {
         id: "mock-2",
         title: `남북 문화 교류의 역사와 의의: ${query} 관점`,
         snippet: "지난 수십 년간 이어져 온 남북 문화 교류의 역사적 흐름과 그 의의를 살펴보고 미래 전망을 제시...",
         source: "통일연구원",
-        sourceUrl: "https://example.com/unification-2",
+        sourceUrl: "https://www.kinu.or.kr/",
         imageUrl: "https://picsum.photos/id/335/200/200",
-        publishedAt: "2023-05-22T14:30:00Z"
+        publishedAt: "2023-05-22T14:30:00Z",
+        isChildNews: false,
+        relevanceScore: 85,
+        educationTags: ["통일교육 핵심 자료"]
       },
       {
         id: "mock-3",
-        title: `통일 교육의 현재와 미래 방향성: ${query} 중심으로`,
-        snippet: "미래 세대를 위한 통일 교육의 현황과 개선 방향에 대한 교육 전문가들의 제언...",
-        source: "교육부",
-        sourceUrl: "https://example.com/unification-3",
+        title: `어린이를 위한 통일 이야기: ${query}`,
+        snippet: "어린이들의 눈높이에 맞춘 통일 교육 콘텐츠로, 남북한의 문화와 생활, 평화의 중요성을 알기 쉽게 설명...",
+        source: "어린이동아",
+        sourceUrl: "https://kids.donga.com/",
         imageUrl: "https://picsum.photos/id/453/200/200",
-        publishedAt: "2023-06-10T11:15:00Z"
+        publishedAt: "2023-06-10T11:15:00Z",
+        isChildNews: true,
+        relevanceScore: 95,
+        educationTags: ["통일교육 핵심 자료", "어린이 친화적"]
       },
     ]
   };
@@ -43,13 +52,24 @@ export async function POST(request: NextRequest) {
   try {
     const requestData = await request.json();
     const { query, targetGrade } = requestData;
-
+    
     // API 키 확인
-    if (!NAVER_CLIENT_ID || !NAVER_CLIENT_SECRET) {
-      console.error('네이버 API 키가 설정되지 않았습니다.');
+    if (!NAVER_CLIENT_ID || !NAVER_CLIENT_SECRET || 
+        NAVER_CLIENT_ID === 'your_naver_client_id_here' || 
+        NAVER_CLIENT_SECRET === 'your_naver_client_secret_here') {
+      
+      console.error('네이버 API 키가 설정되지 않았습니다.', {
+        hasClientId: !!NAVER_CLIENT_ID,
+        hasClientSecret: !!NAVER_CLIENT_SECRET,
+        clientIdValue: NAVER_CLIENT_ID === 'your_naver_client_id_here' ? '기본값 사용 중' : '커스텀 값 설정됨',
+        clientSecretValue: NAVER_CLIENT_SECRET === 'your_naver_client_secret_here' ? '기본값 사용 중' : '커스텀 값 설정됨'
+      });
+      
+      // 실제 API 키가 없으므로 모의 데이터 반환
       return NextResponse.json({
-        success: false,
-        error: 'API 키가 설정되지 않았습니다.',
+        success: true, // 클라이언트에 오류 없이 처리한 것처럼 전달
+        mockDataUsed: true,
+        message: 'API 키가 설정되지 않아 모의 데이터를 사용합니다. .env.local 파일에 NAVER_CLIENT_ID와 NAVER_CLIENT_SECRET을 올바르게 설정해주세요.',
         data: getMockData(query)
       });
     }
@@ -66,7 +86,7 @@ export async function POST(request: NextRequest) {
       // 학년에 따른 검색 최적화
       let searchQuery = '';
       let searchSort = 'sim'; // 기본 정렬: 정확도순
-
+      
       // 대상 학년에 따른 검색어 최적화
       if (targetGrade === 'elementary') {
         // 초등학생용: 어린이 신문 + 쉬운 통일 관련 키워드
@@ -80,31 +100,43 @@ export async function POST(request: NextRequest) {
         // 중학생용 (기본값): 일반 통일 관련 키워드
         searchQuery = `${query} (통일 OR 남북관계 OR 북한 OR 한반도 평화 OR 통일교육)`;
       }
-
-      console.log('최적화된 검색어:', searchQuery, '대상:', targetGrade);
-
-      // 네이버 뉴스 API 호출 - 통일 교육 관련 최적화된 검색어 사용
-      const naverResponse = await fetch(
-        `https://openapi.naver.com/v1/search/news.json?query=${encodeURIComponent(searchQuery)}&display=15&sort=${searchSort}`,
-        {
-          headers: {
-            'X-Naver-Client-Id': NAVER_CLIENT_ID,
-            'X-Naver-Client-Secret': NAVER_CLIENT_SECRET
-          }
-        }
-      );
       
+      // 디버깅 정보 
+      console.log('최적화된 검색어:', searchQuery);
+      console.log('대상 학년:', targetGrade);
+      console.log('정렬 방식:', searchSort);
+      
+      // 네이버 뉴스 API 호출 URL 구성
+      const apiUrl = `https://openapi.naver.com/v1/search/news.json?query=${encodeURIComponent(searchQuery)}&display=15&sort=${searchSort}`;
+      console.log('네이버 API 호출 URL:', apiUrl);
+      
+      // 네이버 뉴스 API 호출
+      const naverResponse = await fetch(apiUrl, {
+        headers: {
+          'X-Naver-Client-Id': NAVER_CLIENT_ID,
+          'X-Naver-Client-Secret': NAVER_CLIENT_SECRET
+        }
+      });
+      
+      // 응답 상태 코드 확인
       if (!naverResponse.ok) {
-        throw new Error(`네이버 API 응답 오류: ${naverResponse.status}`);
+        const errorText = await naverResponse.text();
+        console.error(`네이버 API 응답 오류 (${naverResponse.status}):`, errorText);
+        throw new Error(`네이버 API 응답 오류 (${naverResponse.status}): ${errorText}`);
       }
       
+      // 응답 데이터 파싱
       const naverData = await naverResponse.json();
+      console.log('네이버 API 응답 구조:', Object.keys(naverData));
+      console.log('네이버 API 응답 항목 수:', naverData.items ? naverData.items.length : 0);
       
       // 결과가 없는 경우 처리
-      if (naverData.items.length === 0) {
+      if (!naverData.items || naverData.items.length === 0) {
         console.log('검색 결과가 없습니다. 모의 데이터 반환');
         return NextResponse.json({
           success: true,
+          mockDataUsed: true,
+          message: '검색 결과가 없어 모의 데이터를 사용합니다.',
           data: getMockData(query)
         });
       }
@@ -203,8 +235,10 @@ export async function POST(request: NextRequest) {
       // 관련성 점수 기준으로 정렬 (높은 점수가 먼저 오도록)
       transformedResults.sort((a, b) => b.relevanceScore - a.relevanceScore);
       
+      // 성공 응답 반환
       return NextResponse.json({
         success: true,
+        mockDataUsed: false,
         data: { results: transformedResults }
       });
       
@@ -213,17 +247,21 @@ export async function POST(request: NextRequest) {
       
       // 오류 발생 시 모의 데이터 반환
       return NextResponse.json({
-        success: false,
-        error: apiError.message || '요청 처리 중 오류가 발생했습니다',
+        success: true, // 클라이언트에는 성공으로 전달
+        mockDataUsed: true,
+        message: `API 오류가 발생하여 모의 데이터를 사용합니다: ${apiError.message}`,
         data: getMockData(query)
       });
     }
   } catch (error: any) {
     console.error('네이버 검색 API 라우트 오류:', error);
+    
+    // 심각한 오류 발생 시에도 모의 데이터 반환
     return NextResponse.json({
-      success: false,
-      error: error.message || '요청 처리 중 오류가 발생했습니다',
-      data: null
-    }, { status: 500 });
+      success: true, // 클라이언트에는 성공으로 전달
+      mockDataUsed: true,
+      message: `서버 오류가 발생하여 모의 데이터를 사용합니다: ${error.message}`,
+      data: getMockData('통일')
+    });
   }
 }

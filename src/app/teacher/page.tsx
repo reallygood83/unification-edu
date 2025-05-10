@@ -231,6 +231,22 @@ export default function TeacherPage() {
           {searchResults.length > 0 && (
             <div>
               <h3 className="text-lg font-semibold mb-3">검색 결과</h3>
+
+              {/* 모의 데이터 알림 (첫 번째 결과가 모의 데이터인 경우) */}
+              {searchResults[0].isMockData && (
+                <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3 mb-4 text-sm text-yellow-700">
+                  <div className="flex items-start">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 flex-shrink-0 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                    <div>
+                      <p className="font-medium">모의 데이터가 표시되고 있습니다</p>
+                      <p className="mt-1">네이버 검색 API가 설정되지 않았거나 일시적으로 사용할 수 없습니다. API 키 설정 방법은 상단의 안내를 참고하세요.</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <div className="space-y-4">
                 {searchResults.map((content) => (
                   <div 
