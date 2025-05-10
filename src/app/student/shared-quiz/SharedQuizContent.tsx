@@ -30,8 +30,20 @@ export default function SharedQuizContent() {
       if (!parsedQuiz || !parsedQuiz.questions || !Array.isArray(parsedQuiz.questions)) {
         throw new Error('유효하지 않은 퀴즈 데이터입니다.');
       }
+
+      // 원본 데이터를 디버깅용으로 보존
+      const originalData = data.substring(0, 100) + '...';
+      console.log('원본 URL 데이터 시작 부분:', originalData);
       
-      console.log('URL에서 퀴즈 데이터 로드 성공:', parsedQuiz.title);
+      // 디버깅을 위해 더 자세한 정보 로깅
+      console.log('URL에서 퀴즈 데이터 로드 성공:', {
+        id: parsedQuiz.id,
+        title: parsedQuiz.title,
+        questionsCount: parsedQuiz.questions.length,
+        firstQuestion: parsedQuiz.questions[0].question,
+        category: parsedQuiz.category
+      });
+
       setQuiz(parsedQuiz);
     } catch (err) {
       console.error('퀴즈 데이터 파싱 오류:', err);

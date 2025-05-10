@@ -34,6 +34,16 @@ export default function ShareQuizPage() {
       if (selectedQuizData) {
         // 퀴즈 데이터를 JSON으로 변환하고 Base64로 인코딩
         const compressedQuiz = compressQuiz(selectedQuizData);
+
+        // 디버깅: 압축된 퀴즈 데이터 확인
+        console.log('공유할 퀴즈 정보:', {
+          id: compressedQuiz.id,
+          title: compressedQuiz.title,
+          questionsCount: compressedQuiz.questions.length,
+          firstQuestion: compressedQuiz.questions[0].question,
+          category: compressedQuiz.category
+        });
+
         const encodedQuiz = btoa(JSON.stringify(compressedQuiz));
         const shareUrl = `${window.location.origin}/student/shared-quiz?data=${encodedQuiz}`;
         setShareUrl(shareUrl);
@@ -157,8 +167,8 @@ export default function ShareQuizPage() {
                 </button>
               </div>
               
-              <div className="mt-4">
-                <Link 
+              <div className="mt-4 flex gap-4">
+                <Link
                   href={shareUrl}
                   target="_blank"
                   className="text-primary hover:underline inline-flex items-center"
@@ -168,6 +178,25 @@ export default function ShareQuizPage() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                   </svg>
                 </Link>
+
+                <button
+                  onClick={() => {
+                    // 직접 퀴즈 정보 확인
+                    const selectedQuizData = quizzes.find(q => q.id === selectedQuiz);
+                    if (selectedQuizData) {
+                      console.log('선택된 퀴즈 원본 데이터:', {
+                        id: selectedQuizData.id,
+                        title: selectedQuizData.title,
+                        questions: selectedQuizData.questions.map(q => q.question),
+                        category: selectedQuizData.category
+                      });
+                      alert(`링크에 포함된 퀴즈: "${selectedQuizData.title}"\n문항 수: ${selectedQuizData.questions.length}개\n첫 번째 문제: "${selectedQuizData.questions[0].question.substring(0, 30)}..."`);
+                    }
+                  }}
+                  className="text-blue-600 hover:underline inline-flex items-center"
+                >
+                  퀴즈 정보 확인
+                </button>
               </div>
             </div>
           )}
