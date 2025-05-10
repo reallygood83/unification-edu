@@ -23,8 +23,16 @@ export default function SharedQuizContent() {
     }
 
     try {
+      // 경고문 표시 (디버깅 모드에서만)
+      console.warn(
+        '중요 - URL에서 퀴즈 데이터를 직접 로드합니다. 서버 API나 다른 라우트를 거치지 않습니다.'
+      );
+
       // Base64로 인코딩된 데이터를 디코딩하고 JSON으로 파싱
       const decodedData = atob(data);
+      // 디코딩된 데이터의 처음 일부분 확인 (디버깅용)
+      console.log('디코딩된 데이터(처음 100자):', decodedData.substring(0, 100));
+
       const parsedQuiz = JSON.parse(decodedData) as Quiz;
       
       if (!parsedQuiz || !parsedQuiz.questions || !Array.isArray(parsedQuiz.questions)) {
@@ -41,7 +49,8 @@ export default function SharedQuizContent() {
         title: parsedQuiz.title,
         questionsCount: parsedQuiz.questions.length,
         firstQuestion: parsedQuiz.questions[0].question,
-        category: parsedQuiz.category
+        category: parsedQuiz.category,
+        questions: parsedQuiz.questions.map(q => q.question.substring(0, 30) + '...')
       });
 
       setQuiz(parsedQuiz);

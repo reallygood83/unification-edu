@@ -16,8 +16,21 @@ export default function ShareQuizPage() {
   useEffect(() => {
     // 저장된 퀴즈 목록 가져오기
     const loadQuizzes = () => {
-      const savedQuizzes = getAllQuizzes();
-      setQuizzes(savedQuizzes);
+      try {
+        // 로컬 스토리지에서 직접 퀴즈 데이터 로드 (API를 거치지 않고)
+        const quizzesJson = localStorage.getItem('savedQuizzes');
+        if (quizzesJson) {
+          const savedQuizzes = JSON.parse(quizzesJson) as Quiz[];
+          console.log('로컬 스토리지에서 로드된 퀴즈:', savedQuizzes.length);
+          setQuizzes(savedQuizzes);
+        } else {
+          console.log('로컬 스토리지에 저장된 퀴즈가 없습니다.');
+          setQuizzes([]);
+        }
+      } catch (error) {
+        console.error('퀴즈 로드 오류:', error);
+        setQuizzes([]);
+      }
       setLoading(false);
     };
     
